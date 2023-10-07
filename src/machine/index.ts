@@ -1,12 +1,24 @@
 
 interface IDipsatchProps {
     type: string,
-    data: object;
+    data?: object;
 }
 
+interface IInvoke {
+    src: Promise,
+    onDone?: {
+        cb?: (data) => void;
+        target?: string
+    },
+    onError?: {
+        cb?: (data) => void;
+        target?: string;
+    }
+}
 
 interface IStateValue {
-    on?: Record<string, { target: string }>
+    on?: Record<string, { target?: string }>,
+    invoke?: IInvoke;
 }
 
 type TState = Record<string, IStateValue>
@@ -17,6 +29,7 @@ interface ICreateMachineProps {
     states: TState,
     initial: keyof TState;
 }
+
 // TODO: What if JSON could be ditched and use a js syntax to deal with states
 // Ex:
 // const fetchMachine = createSimpleMachine('fetchMachine') ;
@@ -25,17 +38,51 @@ interface ICreateMachineProps {
 // const error = fetchMachine.createState('error');
 // idle.on('fetch').moveTo('loading').act()
 // const transitions 
-export const createMachine = ({ states, initial }: ICreateMachineProps): [currentState: string, dispatch: () => (props: IDipsatchProps) => void] => {
-    console.log(states);
-    const currentState = initial;
-    const dispatch = () => ({ type, data }: IDipsatchProps) => console.log(type, data);
+export const createMachine = ({ states, initial }: ICreateMachineProps): [currentState: Record<'value', string>, dispatch: (props: IDipsatchProps) => void] => {
+    const currentState = {
+        value: initial,
+        invoke: {
+            src: () => { }
+        }
+    };
+    const stateIterator = {
+        next(actionName: string) {
+            const currentStateValue = states[currentState.value];
+            const nextState = currentStateValue.on ? currentStateValue.on[actionName].target || currentState.value : currentState.value;
+            return { value: nextState, done: false }
+        }
+    }
+    const dispatch = (props: IDipsatchProps) => {
+        const { type } = props;
+        currentState.value = stateIterator.next(type).value;
+    }
     return [currentState, dispatch]
 }
 
 const [state, send] = createMachine({
-    /** @xstate-layout N4IgpgJg5mDOIC5gF8A0IB2B7CdGgAoBbAQwGMALASwzAEp8QAHLWKgFyqw0YA9EAtADZ0AT0FDkaEMXLVadAHRUIAGzCMWbTtz6IALACYxiABwBGRQFYADHZsB2IedM2AzPoCcUqUA */
     states: {
-        idle: {}
+        idle: {
+            on: {
+                FETCH: {
+                    target: 'loading'
+                }
+            }
+        },
+        loading: {
+            invoke: {
+                src: new Promise(resolve => setTimeout(() => resolve(100), 1000)),
+                onDone: {
+                    cb: console.log
+                }
+            }
+        },
+        error: {}
     },
     initial: 'idle'
 })
+console.log(state.value);
+send({
+    type: 'FETCH'
+})
+
+console.log(state.value);
