@@ -70,7 +70,7 @@ class State {
 
 class MachineConfig {
     states: TStates<string[]> = {};
-    context: object = {};
+    context: TContext = {};
     initialState: State = new State('init');
 
     constructor() {
@@ -85,6 +85,10 @@ class MachineConfig {
         this.states = newStates;
         return newStates
     }
+
+    setContext(initialContext: TContext) {
+        this.context = initialContext; // TODO: Deep Clone initialContext
+    }
 }
 
 const machineConfig = new MachineConfig();
@@ -94,7 +98,7 @@ machineConfig.initialState = (states.idle);
 
 states.idle.on('fetch').moveTo('fetching').fireAndForget(() => console.log('hello i am from fetching'))
 states.fetching.on('poll').fireAndForget(() => console.log('received a poll event'))
-// states.fetching.on('success').moveTo('idle');
+states.fetching.on('success').moveTo('idle');
 // states.fetching.on('error').moveTo('error')
 
 type TCurrentState = {
@@ -128,5 +132,5 @@ const [state, send] = createMachine(machineConfig);
 console.log(state.value)
 send('fetch')
 send('poll')
-// send('success')
-// console.log(state.value)
+send('success')
+console.log(state.value)
