@@ -1,38 +1,69 @@
 type TStates<T extends PropertyKey[]> = {
     [TIndex in T[number]]: State
 }
+
+type TContext = {
+    [key: string]: any;
+}
+
+type TEvent = {
+    type: string;
+    data?: {
+        [key: string]: any;
+    }
+}
+
+type TStateEventMap = {
+    fireAndForgetEvents: Array<({ context }: { context: TContext }) => void>;
+    updateContextEvents: Array<({ context, event }: { context: TContext, event: TEvent }) => void>
+}
 class StateEvent {
-    #value: string;
-    #updateStateMap: () => void;
-    constructor(val: string, updateStateMap: () => void) {
-        this.#value = val;
-        this.#updateStateMap = updateStateMap;
+    stateEventMap: TStateEventMap = {
+        fireAndForgetEvents: [],
+        updateContextEvents: []
+    }
+    constructor() {
+        this.stateEventMap = {
+            fireAndForgetEvents: [],
+            updateContextEvents: []
+        }
     }
     fireAndForget(cb: () => void) {
+        const oldStateEventMapFireAndForgetEvents = this.stateEventMap.fireAndForgetEvents;
+        this.stateEventMap.fireAndForgetEvents = [...oldStateEventMapFireAndForgetEvents, cb];
         return this
     }
     updateContext(cb: () => void) {
+        const oldStateEventMapUpdateContextEvents = this.stateEventMap.updateContextEvents;
+        this.stateEventMap.updateContextEvents = [...oldStateEventMapUpdateContextEvents, cb];
         return this
     }
 }
 class State {
     value: string = '';
-    #stateEvent: StateEvent = new StateEvent('', () => { });
+    #stateEvent: StateEvent = new StateEvent('');
     stateMap: Map<string, string> = new Map();
+    stateEventsMap: Map<string, StateEvent> = new Map();
     #chainedActionType: string = ''
     constructor(val: string) {
         this.value = val;
     }
     on(actionType: string) {
-        const stateEvent = new StateEvent(this.value, () => { });
+        const stateEvent = new StateEvent();
         this.#stateEvent = stateEvent;
         this.stateMap.set(actionType, this.value);
+        this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
-        return { moveTo: this.#moveTo.bind(this), fireAndForget: stateEvent.fireAndForget, updateContext: stateEvent.updateContext }
+        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
+        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
+        return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext }
     }
     #moveTo(target: string) {
         this.stateMap.set(this.#chainedActionType, target);
-        return this.#stateEvent;
+        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
+        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
+
+        return { fireAndForget: fireAndForget, updateContext }
     }
 
 }
@@ -61,10 +92,10 @@ const machineConfig = new MachineConfig();
 const states = machineConfig.addStates(['idle', 'fetching', 'error']);
 machineConfig.initialState = (states.idle);
 
-states.idle.on('fetch').moveTo('fetching').fireAndForget(console.log).updateContext(console.log)
-states.idle.on('timer').fireAndForget(console.log)
-states.fetching.on('success').moveTo('idle');
-states.fetching.on('error').moveTo('error')
+states.idle.on('fetch').moveTo('fetching').fireAndForget(() => console.log('hello i am from fetching'))
+states.fetching.on('poll').fireAndForget(() => console.log('received a poll event'))
+// states.fetching.on('success').moveTo('idle');
+// states.fetching.on('error').moveTo('error')
 
 type TCurrentState = {
     value: string;
@@ -83,6 +114,9 @@ const createMachine = (config: MachineConfig): [TCurrentState, (actionType: stri
         }
         else {
             const nextState = states[nextStateVal];
+            const eventsMap = _currentState.stateEventsMap.get(actionType)?.stateEventMap;
+            const events = [...(eventsMap?.fireAndForgetEvents ?? []), ...(eventsMap?.updateContextEvents ?? [])];
+            events.forEach(event => event({ context: {}, event: { type: actionType } }))
             _currentState = nextState
             currentState.value = _currentState.value
         }
@@ -93,6 +127,6 @@ const createMachine = (config: MachineConfig): [TCurrentState, (actionType: stri
 const [state, send] = createMachine(machineConfig);
 console.log(state.value)
 send('fetch')
-console.log(state.value)
-send('success')
-console.log(state.value)
+send('poll')
+// send('success')
+// console.log(state.value)
