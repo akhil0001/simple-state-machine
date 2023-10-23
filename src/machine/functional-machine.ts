@@ -1,20 +1,45 @@
+type TStates<T extends PropertyKey[]> = {
+    [TIndex in T[number]]: State
+}
+class StateEvent {
+    #value: string;
+    #updateStateMap: () => void;
+    constructor(val: string, updateStateMap: () => void) {
+        this.#value = val;
+        this.#updateStateMap = updateStateMap;
+    }
+    fireAndForget(cb: () => void) {
+        return this
+    }
+    updateContext(cb: () => void) {
+        return this
+    }
+}
 class State {
     value: string = '';
     constructor(val: string) {
         this.value = val;
     }
+    on(actionType: string) {
+        return { moveTo: this.#moveTo.bind(this), fireAndForget: this.#fireAndForget.bind(this), updateContext: this.#updateContext.bind(this) }
+    }
+    #moveTo(target: string) {
+        const stateEvent = new StateEvent(this.value, () => { });
+        return stateEvent;
+    }
 
 }
-type TStates<T extends PropertyKey[]> = {
-    [TIndex in T[number]]: State
-}
-class Machine {
+
+class MachineConfig {
     states: TStates<string[]> = {};
     context: object = {};
+    initialState: State = new State('init');
+
     constructor() {
         this.context = {};
         this.states = {}
     }
+
     addStates<T extends string>(states: T[]): TStates<T[]> {
         const newStates = states.reduce((acc, curr) => {
             return { ...acc, [curr]: new State(curr) };
@@ -23,23 +48,22 @@ class Machine {
     }
 }
 
-const machine = new Machine();
+const machineConfig = new MachineConfig();
 
-const states = machine.addStates(['idle', 'fetching'])
+const states = machineConfig.addStates(['idle', 'fetching', 'error']);
+machineConfig.initialState = (states.idle);
+
+states.idle.on('fetch').moveTo('fetching').fireAndForget(console.log).updateContext(console.log)
+
+const createMachine = (config: MachineConfig) => {
+    const { states, initialState } = config;
+    const currentState = initialState;
 
 
-// const { idle, fetching, error } = fetchMachine.addStates(['idle', 'fetching', 'error']);
+    const send = (actionType: string) => {
+        currentState.on()
+    }
 
-// // context
+    return [currentState, send];
 
-// fetchMachine.setContext({ urls: [] });
-
-// // actions
-// const setUrls = (context, event) => context;
-
-// // services
-// const fetchTodo = async () => await new Promise(res => setTimeout(res, 1000));
-
-// // transition
-// idle.on('fetch').triggers(setUrls).movesTo(fetching)
-// idle.on('entry').invoke(fetchTodo)
+}
