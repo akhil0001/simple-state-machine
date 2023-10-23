@@ -17,15 +17,22 @@ class StateEvent {
 }
 class State {
     value: string = '';
+    #stateEvent: StateEvent = new StateEvent('', () => { });
+    stateMap: Map<string, string> = new Map();
+    #chainedActionType: string = ''
     constructor(val: string) {
         this.value = val;
     }
     on(actionType: string) {
-        return { moveTo: this.#moveTo.bind(this), fireAndForget: this.#fireAndForget.bind(this), updateContext: this.#updateContext.bind(this) }
+        const stateEvent = new StateEvent(this.value, () => { });
+        this.#stateEvent = stateEvent;
+        this.stateMap.set(actionType, this.value);
+        this.#chainedActionType = actionType;
+        return { moveTo: this.#moveTo.bind(this), fireAndForget: stateEvent.fireAndForget, updateContext: stateEvent.updateContext }
     }
     #moveTo(target: string) {
-        const stateEvent = new StateEvent(this.value, () => { });
-        return stateEvent;
+        this.stateMap.set(this.#chainedActionType, target);
+        return this.#stateEvent;
     }
 
 }
@@ -43,7 +50,8 @@ class MachineConfig {
     addStates<T extends string>(states: T[]): TStates<T[]> {
         const newStates = states.reduce((acc, curr) => {
             return { ...acc, [curr]: new State(curr) };
-        }, this.states)
+        }, this.states);
+        this.states = newStates;
         return newStates
     }
 }
@@ -54,16 +62,37 @@ const states = machineConfig.addStates(['idle', 'fetching', 'error']);
 machineConfig.initialState = (states.idle);
 
 states.idle.on('fetch').moveTo('fetching').fireAndForget(console.log).updateContext(console.log)
+states.idle.on('timer').fireAndForget(console.log)
+states.fetching.on('success').moveTo('idle');
+states.fetching.on('error').moveTo('error')
 
-const createMachine = (config: MachineConfig) => {
-    const { states, initialState } = config;
-    const currentState = initialState;
-
-
-    const send = (actionType: string) => {
-        currentState.on()
-    }
-
-    return [currentState, send];
-
+type TCurrentState = {
+    value: string;
 }
+
+const createMachine = (config: MachineConfig): [TCurrentState, (actionType: string) => void] => {
+    const { states, initialState } = config;
+    let _currentState = initialState
+    const currentState: TCurrentState = {
+        value: _currentState.value
+    }
+    const send = (actionType: string) => {
+        const nextStateVal = _currentState.stateMap.get(actionType);
+        if (nextStateVal == undefined) {
+            console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
+        }
+        else {
+            const nextState = states[nextStateVal];
+            _currentState = nextState
+            currentState.value = _currentState.value
+        }
+    }
+    return [currentState, send];
+}
+
+const [state, send] = createMachine(machineConfig);
+console.log(state.value)
+send('fetch')
+console.log(state.value)
+send('success')
+console.log(state.value)
