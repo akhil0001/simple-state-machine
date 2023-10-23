@@ -41,7 +41,7 @@ class StateEvent {
 }
 class State {
     value: string = '';
-    #stateEvent: StateEvent = new StateEvent('');
+    #stateEvent: StateEvent = new StateEvent();
     stateMap: Map<string, string> = new Map();
     stateEventsMap: Map<string, StateEvent> = new Map();
     #chainedActionType: string = ''
