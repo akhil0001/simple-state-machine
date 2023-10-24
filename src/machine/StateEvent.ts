@@ -1,9 +1,7 @@
-import { TDefaultEvent } from "./types";
+import { TDefaultEvent, TStateEvent } from "./types";
 
-type TStateEventCollection<IContext> = {
-    type: 'fireAndForget' | 'updateContext',
-    callback: ({ context, event }: { context: IContext, event: TDefaultEvent }) => void
-}[]
+
+type TStateEventCollection<IContext> = TStateEvent<IContext>[]
 export class StateEvent<IContext> {
     stateEventCollection: TStateEventCollection<IContext> = []
     constructor() {
@@ -14,7 +12,7 @@ export class StateEvent<IContext> {
         this.stateEventCollection = [...oldStateEventCollection, { type: 'fireAndForget', callback: cb }]
         return this
     }
-    updateContext(cb: () => void) {
+    updateContext(cb: ({ context, event }: { context: IContext, event: TDefaultEvent }) => IContext) {
         const oldStateContextCollection = this.stateEventCollection;
         this.stateEventCollection = [...oldStateContextCollection, { type: 'updateContext', callback: cb }]
         return this
