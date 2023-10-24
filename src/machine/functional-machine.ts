@@ -1,5 +1,6 @@
-type TStates<T extends PropertyKey[]> = {
-    [TIndex in T[number]]: State
+// TODO: Fix all types and names
+type TStates<T extends PropertyKey[], U> = {
+    [TIndex in T[number]]: State<U>
 }
 
 type TContext = {
@@ -13,43 +14,47 @@ type TEvent = {
     }
 }
 
-type TStateEventMap = {
-    fireAndForgetEvents: Array<({ context }: { context: TContext }) => void>;
-    updateContextEvents: Array<({ context, event }: { context: TContext, event: TEvent }) => void>
-}
-class StateEvent {
-    stateEventMap: TStateEventMap = {
-        fireAndForgetEvents: [],
-        updateContextEvents: []
-    }
+// type TStateEventArray = {
+//     fireAndForgetEvents: Array<({ context }: { context: TContext }) => void>;
+//     updateContextEvents: Array<({ context, event }: { context: TContext, event: TEvent }) => void>
+// }
+
+type TStateEventCollection<TTContext> = {
+    type: 'fireAndForget' | 'updateContext',
+    callback: ({ context, event }: { context: TTContext, event: TEvent }) => void
+}[]
+class StateEvent<TTContext> {
+    stateEventCollection: TStateEventCollection<TTContext> = []
     constructor() {
-        this.stateEventMap = {
-            fireAndForgetEvents: [],
-            updateContextEvents: []
-        }
+        this.stateEventCollection = [];
     }
-    fireAndForget(cb: () => void) {
-        const oldStateEventMapFireAndForgetEvents = this.stateEventMap.fireAndForgetEvents;
-        this.stateEventMap.fireAndForgetEvents = [...oldStateEventMapFireAndForgetEvents, cb];
+    fireAndForget(cb: ({ context, event }: { context: TTContext, event: TEvent }) => void) {
+
+        // const oldStateEventMapFireAndForgetEvents = this.stateEventMap.fireAndForgetEvents;
+        // this.stateEventMap.fireAndForgetEvents = [...oldStateEventMapFireAndForgetEvents, cb];
+        const oldStateEventCollection = this.stateEventCollection;
+        this.stateEventCollection = [...oldStateEventCollection, { type: 'fireAndForget', callback: cb }]
         return this
     }
     updateContext(cb: () => void) {
-        const oldStateEventMapUpdateContextEvents = this.stateEventMap.updateContextEvents;
-        this.stateEventMap.updateContextEvents = [...oldStateEventMapUpdateContextEvents, cb];
+        // const oldStateEventMapUpdateContextEvents = this.stateEventMap.updateContextEvents;
+        // this.stateEventMap.updateContextEvents = [...oldStateEventMapUpdateContextEvents, cb];
+        const oldStateContextCollection = this.stateEventCollection;
+        this.stateEventCollection = [...oldStateContextCollection, { type: 'updateContext', callback: cb }]
         return this
     }
 }
-class State {
+class State<TTContext> {
     value: string = '';
-    #stateEvent: StateEvent = new StateEvent();
+    #stateEvent: StateEvent<TTContext> = new StateEvent<TTContext>();
     stateMap: Map<string, string> = new Map();
-    stateEventsMap: Map<string, StateEvent> = new Map();
-    #chainedActionType: string = ''
+    stateEventsMap: Map<string, StateEvent<TTContext>> = new Map();
+    #chainedActionType: string = '';
     constructor(val: string) {
         this.value = val;
     }
     on(actionType: string) {
-        const stateEvent = new StateEvent();
+        const stateEvent = new StateEvent<TTContext>();
         this.#stateEvent = stateEvent;
         this.stateMap.set(actionType, this.value);
         this.stateEventsMap.set(actionType, this.#stateEvent);
@@ -68,45 +73,46 @@ class State {
 
 }
 
-class MachineConfig {
-    states: TStates<string[]> = {};
-    context: TContext = {};
-    initialState: State = new State('init');
+class MachineConfig<TTContext extends TContext> {
+    states: TStates<string[], TTContext> = {};
+    context: TTContext;
+    initialState: State<TTContext> = new State('init');
 
-    constructor() {
-        this.context = {};
-        this.states = {}
+    constructor(newContext: TTContext) {
+        this.context = { ...newContext ?? {} };
     }
 
-    addStates<T extends string>(states: T[]): TStates<T[]> {
+    addStates<T extends string>(states: T[]): TStates<T[], TTContext> {
         const newStates = states.reduce((acc, curr) => {
-            return { ...acc, [curr]: new State(curr) };
+            return { ...acc, [curr]: new State<TTContext>(curr) };
         }, this.states);
         this.states = newStates;
         return newStates
     }
 
-    setContext(initialContext: TContext) {
-        this.context = initialContext; // TODO: Deep Clone initialContext
-    }
 }
+interface SomeContext {
+    id: number
+}
+const machineConfig = new MachineConfig<SomeContext>({
+    id: 0
+});
 
-const machineConfig = new MachineConfig();
+const { idle, fetching, error } = machineConfig.addStates(['idle', 'fetching', 'error']);
+machineConfig.initialState = (idle);
 
-const states = machineConfig.addStates(['idle', 'fetching', 'error']);
-machineConfig.initialState = (states.idle);
-
-states.idle.on('fetch').moveTo('fetching').fireAndForget(() => console.log('hello i am from fetching'))
-states.fetching.on('poll').fireAndForget(() => console.log('received a poll event'))
-states.fetching.on('success').moveTo('idle');
+idle.on('fetch').moveTo('fetching').fireAndForget(({ context }) => context.id).fireAndForget(() => console.log('2'))
+fetching.on('poll').fireAndForget(() => console.log('received a poll event'))
+fetching.on('success').moveTo('idle');
+error.on('fetch').moveTo('idle')
 // states.fetching.on('error').moveTo('error')
 
 type TCurrentState = {
     value: string;
 }
 
-const createMachine = (config: MachineConfig): [TCurrentState, (actionType: string) => void] => {
-    const { states, initialState } = config;
+function createMachine<U extends TContext>(config: MachineConfig<U>): [TCurrentState, (actionType: string) => void] {
+    const { states, initialState, context } = config;
     let _currentState = initialState
     const currentState: TCurrentState = {
         value: _currentState.value
@@ -118,9 +124,8 @@ const createMachine = (config: MachineConfig): [TCurrentState, (actionType: stri
         }
         else {
             const nextState = states[nextStateVal];
-            const eventsMap = _currentState.stateEventsMap.get(actionType)?.stateEventMap;
-            const events = [...(eventsMap?.fireAndForgetEvents ?? []), ...(eventsMap?.updateContextEvents ?? [])];
-            events.forEach(event => event({ context: {}, event: { type: actionType } }))
+            const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
+            eventsCollection.forEach(event => event.callback({ context, event: { type: actionType } }))
             _currentState = nextState
             currentState.value = _currentState.value
         }
@@ -128,7 +133,7 @@ const createMachine = (config: MachineConfig): [TCurrentState, (actionType: stri
     return [currentState, send];
 }
 
-const [state, send] = createMachine(machineConfig);
+const [state, send] = createMachine<SomeContext>(machineConfig);
 console.log(state.value)
 send('fetch')
 send('poll')
