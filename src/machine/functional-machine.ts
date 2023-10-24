@@ -1,4 +1,5 @@
 // TODO: Fix all types and names
+// TODO: Refactro to move out classes and usages into separate files 
 type TStates<T extends PropertyKey[], U> = {
     [TIndex in T[number]]: State<U>
 }
@@ -105,7 +106,6 @@ idle.on('fetch').moveTo('fetching').fireAndForget(({ context }) => context.id).f
 fetching.on('poll').fireAndForget(() => console.log('received a poll event'))
 fetching.on('success').moveTo('idle');
 error.on('fetch').moveTo('idle')
-// states.fetching.on('error').moveTo('error')
 
 type TCurrentState = {
     value: string;
