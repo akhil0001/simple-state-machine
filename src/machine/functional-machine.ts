@@ -10,6 +10,7 @@ const machineConfig = new MachineConfig<SomeContext>({
 const { idle, fetching, error } = machineConfig.addStates(['idle', 'fetching', 'error']);
 machineConfig.initialState = (idle);
 
+// TODO: There should be a best practice to separate out the actions, services and transitions
 idle.on('fetch').moveTo('fetching').fireAndForget(({ context }) => context.id).fireAndForget(() => console.log('2')).updateContext(() => {
     return ({
         id: 4
@@ -36,7 +37,11 @@ fetching.invokeCallback((context, sendBack) => {
     }
 }).on('done').moveTo('idle')
 fetching.on('error').moveTo('error')
+
 error.invokeCallback(clickEventCb).on('clicked').fireAndForget(({ event }) => console.log(event.type, 'from ff'))
+error.after(5000).moveTo('idle').fireAndForget(() => console.log('moved to idle'));
+error.on('refetch').moveTo('fetching')
+
 /* Usage of Machine */
 
 import { createMachine } from "./createMachine";
