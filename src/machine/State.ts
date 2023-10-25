@@ -1,13 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StateEvent } from "./StateEvent";
+import { TCallback, TSendBack } from "./types";
 
 export class State<IContext> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
     stateMap: Map<string, string> = new Map();
     stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
+    callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
     constructor(val: string) {
         this.value = val;
+    }
+    invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {
+        this.callback = callback;
+        const boundOn = this.on.bind(this);
+        return { on: boundOn }
     }
     on(actionType: string) {
         const stateEvent = new StateEvent<IContext>();
