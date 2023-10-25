@@ -3,7 +3,7 @@ import { StateEvent } from "./StateEvent";
 import { TCallback, TSendBack } from "./types";
 
 // TODO: Refactor the repeated logic to move to separate internal functions
-
+// TODO: Have a similar func like assign of xstate
 export class State<IContext> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
