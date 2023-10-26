@@ -47,8 +47,8 @@ error.on('refetch').moveTo('fetching')
 import { createMachine } from "./createMachine";
 import { TCallback } from "./types";
 
-const [state, send] = createMachine<SomeContext>(machineConfig);
-console.log(state.value, state.context.id)
+const { send, subscribe, start } = createMachine<SomeContext>(machineConfig);
+subscribe((state) => console.log(state.value, 'from subscription'))
+start();
 send('fetch')
 send('error')
-console.log(state.value, state.context.id)
