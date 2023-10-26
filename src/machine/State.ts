@@ -2,12 +2,14 @@
 import { StateEvent } from "./StateEvent";
 import { TCallback, TSendBack } from "./types";
 
-// TODO: Refactor the repeated logic to move to separate internal functions
+type TTargetState<IContext> = ((context: IContext) => string) | string;
 
+// TODO: Refactor the repeated logic to move to separate internal functions
+// TODO: Have a similar func like assign of xstate
 export class State<IContext> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
-    stateMap: Map<string, string> = new Map();
+    stateMap: Map<string, TTargetState<IContext>> = new Map();
     stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
     callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
@@ -31,7 +33,7 @@ export class State<IContext> {
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
         return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext }
     }
-    #moveTo(target: string) {
+    #moveTo(target: TTargetState<IContext>) {
         this.stateMap.set(this.#chainedActionType, target);
         const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);

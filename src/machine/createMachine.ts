@@ -22,7 +22,7 @@ type TCreateMachineReturn<U> = {
 
 export function createMachine<U extends TDefaultContext>(config: MachineConfig<U>): TCreateMachineReturn<U> {
     const { states, initialState, context: initialContext } = config;
-    let _currentState = initialState
+    let _currentState = initialState.value === '' ? states[Object.keys(states)[0]] : initialState
     let _context = initialContext;
     let isStarted = false;
     let cleanupEffects = () => { };
@@ -78,7 +78,7 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
         else {
             cleanupEffects();
             clearTimeout(timerId)
-            const nextState = states[nextStateVal];
+            const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
             const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
             _updateState(nextState);
