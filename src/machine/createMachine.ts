@@ -78,7 +78,7 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
         else {
             cleanupEffects();
             clearTimeout(timerId)
-            const nextState = states[nextStateVal];
+            const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
             const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
             _updateState(nextState);
