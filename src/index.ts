@@ -44,6 +44,8 @@ running.after(1000)
     .moveTo(moveToIdleWhenDone)
     .updateContext(decrementTime)
 
+// UI Logic
+
 function init() {
     const startBtn = document.getElementById('start');
     const pauseBtn = document.getElementById('pause');
