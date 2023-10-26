@@ -15,6 +15,7 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
     let _currentState = initialState
     let _context = initialContext;
     let cleanupEffects = () => { };
+    let timerId = -1;
     const currentState: TCurrentState<U> = {
         value: _currentState.value,
         context: _context
@@ -28,6 +29,11 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
     function _updateState(nextState: State<U>) {
         _currentState = nextState;
         currentState.value = _currentState.value;
+        const nextAction = _currentState.stateEventsMap.get('after')
+        const delay = _currentState.delay;
+        if (nextAction) {
+            timerId = setTimeout(() => send('after'), delay)
+        }
         cleanupEffects = _currentState.callback(_context, send);
     }
 
@@ -49,6 +55,7 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
         }
         else {
             cleanupEffects();
+            clearTimeout(timerId)
             const nextState = states[nextStateVal];
             const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
