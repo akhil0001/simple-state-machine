@@ -1,19 +1,48 @@
 import { MachineConfig } from "./machine/MachineConfig";
 import { createMachine } from "./machine/createMachine";
 
+interface ITimerContext {
+    currentTime: number
+}
+
+// actions
+const decrementTime = ({ context }: { context: ITimerContext }) => {
+    return { ...context, currentTime: context.currentTime - 1 }
+}
+
+const resetTime = ({ context }: { context: ITimerContext }) => {
+    return { ...context, currentTime: 0 }
+}
+
+// conds
+const moveToIdleWhenDone = (context: ITimerContext) => {
+    return context.currentTime === 1 ? 'idle' : 'running'
+}
+
 // machine config
-const timerMachineConfig = new MachineConfig({
-    currentTime: 60
+const timerMachineConfig = new MachineConfig<ITimerContext>({
+    currentTime: 5
 });
 
 const { idle, running } = timerMachineConfig.addStates(['idle', 'running']);
 
 
-idle.on('start').moveTo('running')
-idle.on('stop').updateContext(({ context }) => ({ ...context, currentTime: 0 }))
-running.on('stop').moveTo('idle').updateContext(({ context }) => ({ ...context, currentTime: 60 }));
-running.on('pause').moveTo('idle')
-running.after(1000).moveTo('running').updateContext(({ context }) => ({ ...context, currentTime: context.currentTime - 1 }))
+idle.on('start')
+    .moveTo('running')
+
+idle.on('stop')
+    .updateContext(resetTime)
+
+running.on('stop')
+    .moveTo('idle')
+    .updateContext(({ context }) => ({ ...context, currentTime: 60 }));
+
+running.on('pause')
+    .moveTo('idle')
+
+running.after(1000)
+    .moveTo(moveToIdleWhenDone)
+    .updateContext(decrementTime)
 
 function init() {
     const startBtn = document.getElementById('start');
@@ -25,16 +54,12 @@ function init() {
     const { start, subscribe, send } = createMachine(timerMachineConfig);
 
     subscribe((state) => {
-        // const running = state.value === 'running';
         const { currentTime } = state.context;
-        // startBtn?.setAttribute('disabled', '' + !running)
-        // pauseBtn?.toggleAttribute('disabled', '' + running)
-        // stopBtn?.setAttribute('disabled', '' + running)
         if (displayTimeEl) {
             displayTimeEl.innerText = '' + currentTime;
         }
-
     });
+    subscribe(state => console.log(state.value))
     start()
 
     startBtn?.addEventListener('click', () => send('start'))
