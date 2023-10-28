@@ -5,6 +5,8 @@ interface ITimerContext {
     currentTime: number
 }
 
+const states = ['idle', 'running'] as const
+type TStates = typeof states[number];
 // actions
 const decrementTime = ({ context }: { context: ITimerContext }) => {
     return { ...context, currentTime: context.currentTime - 1 }
@@ -15,7 +17,7 @@ const resetTime = ({ context }: { context: ITimerContext }) => {
 }
 
 // conds
-const moveToIdleWhenDone = (context: ITimerContext) => {
+function moveToIdleWhenDone(context: ITimerContext) {
     return context.currentTime === 1 ? 'idle' : 'running'
 }
 
@@ -24,12 +26,10 @@ const timerMachineConfig = new MachineConfig<ITimerContext>({
     currentTime: 5
 });
 
-const { idle, running } = timerMachineConfig.addStates(['idle', 'running']);
-
+const { idle, running } = timerMachineConfig.addStates<TStates>(states);
 
 idle.on('start')
     .moveTo('running')
-
 idle.on('stop')
     .updateContext(resetTime)
 

@@ -1,8 +1,8 @@
 import { State } from "./State";
 import { TDefaultContext } from "./types";
 
-type TStates<T extends PropertyKey[], IContext> = {
-    [TIndex in T[number]]: State<IContext>
+type TStates<T extends string[], IContext> = {
+    [TIndex in T[number]]: State<IContext, T>
 }
 
 export class MachineConfig<IContext extends TDefaultContext> {
@@ -13,13 +13,12 @@ export class MachineConfig<IContext extends TDefaultContext> {
         this.context = { ...newContext ?? {} };
     }
 
-    addStates<T extends string>(states: T[]): TStates<T[], IContext> {
+    addStates<T extends string>(states: readonly T[]): TStates<T[], IContext> {
         const newStates = states.reduce((acc, curr) => {
-            return { ...acc, [curr]: new State<IContext>(curr) };
-        }, this.states);
+            return { ...acc, [curr]: new State<IContext, T[]>(curr) };
+        }, this.states as TStates<T[], IContext>);
         this.states = newStates;
         return newStates
     }
-
 
 }

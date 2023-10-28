@@ -2,14 +2,18 @@
 import { StateEvent } from "./StateEvent";
 import { TCallback, TSendBack } from "./types";
 
-type TTargetState<IContext> = ((context: IContext) => string) | string;
 
+type TConvertArrToObj<TArr extends string[]> = {
+    [TIndex in TArr[number]]: TArr[number]
+}
+
+type TTargetState<IContext, AllStates extends string[]> = ((context: IContext) => keyof TConvertArrToObj<AllStates>) | keyof TConvertArrToObj<AllStates>;
 // TODO: Refactor the repeated logic to move to separate internal functions
 // TODO: Have a similar func like assign of xstate
-export class State<IContext> {
+export class State<IContext, AllStates extends string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
-    stateMap: Map<string, TTargetState<IContext>> = new Map();
+    stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
     stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
     callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
@@ -33,7 +37,7 @@ export class State<IContext> {
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
         return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext }
     }
-    #moveTo(target: TTargetState<IContext>) {
+    #moveTo(target: TTargetState<IContext, AllStates>) {
         this.stateMap.set(this.#chainedActionType, target);
         const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
