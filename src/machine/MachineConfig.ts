@@ -8,11 +8,9 @@ type TStates<T extends PropertyKey[], IContext> = {
 export class MachineConfig<IContext extends TDefaultContext> {
     states: TStates<string[], IContext> = {};
     context: IContext;
-    initialState: State<IContext>;
 
     constructor(newContext: IContext) {
         this.context = { ...newContext ?? {} };
-        this.initialState = new State('')
     }
 
     addStates<T extends string>(states: T[]): TStates<T[], IContext> {
@@ -23,13 +21,5 @@ export class MachineConfig<IContext extends TDefaultContext> {
         return newStates
     }
 
-    setInitialState(state: string | State<IContext>) {
-        if (typeof state === 'string') {
-            this.initialState = this.states[state]
-        }
-        else if (state instanceof State) {
-            this.initialState = state
-        }
-    }
 
 }
