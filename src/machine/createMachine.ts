@@ -1,34 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
-import { TDefaultContext, TStateEvent } from "./types";
+import { TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
-type TCurrentState<U> = {
-    value: string;
+type TCurrentState<U, V extends TDefaultStates> = {
+    value: V[number];
     context: U
 }
 
-type TSubscribeCb<U> = (state: TCurrentState<U>) => any
+type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
-type TCreateMachineReturn<U> = {
-    state: TCurrentState<U>;
+type TCreateMachineReturn<U, V extends TDefaultStates> = {
+    state: TCurrentState<U, V>;
     send: (actionType: string) => void;
-    subscribe: (cb: TSubscribeCb<U>) => void;
+    subscribe: (cb: TSubscribeCb<U, V>) => void;
     start: () => void
 }
 
 
 // TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
-export function createMachine<U extends TDefaultContext>(config: MachineConfig<U>): TCreateMachineReturn<U> {
+export function createMachine<U extends TDefaultContext, V extends TDefaultStates>(config: MachineConfig<U, V>): TCreateMachineReturn<U, V> {
     const { states, context: initialContext } = config;
-    let _currentState = states[Object.keys(states)[0]]
+    const k = Object.keys(states)[0]
+    let _currentState = states[k]
     let _context = initialContext;
     let isStarted = false;
     let cleanupEffects = () => { };
     let timerId = -1;
-    let callbacksArr: TSubscribeCb<U>[] = [];
-    const currentState: TCurrentState<U> = {
+    let callbacksArr: TSubscribeCb<U, V>[] = [];
+    const currentState: TCurrentState<U, V> = {
         value: _currentState.value,
         context: _context
     }
@@ -43,7 +44,7 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
         callbacksArr.forEach(cb => cb(currentState));
     }
 
-    function _updateState(nextState: State<U>) {
+    function _updateState(nextState: State<U, V>) {
         _currentState = nextState;
         currentState.value = _currentState.value;
         _publishEventsToAllSubscribers();
@@ -81,11 +82,11 @@ export function createMachine<U extends TDefaultContext>(config: MachineConfig<U
             const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
             const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
-            _updateState(nextState);
+            _updateState(nextState as State<U, V>);
         }
     }
 
-    function subscribe(cb: TSubscribeCb<U>) {
+    function subscribe(cb: TSubscribeCb<U, V>) {
         callbacksArr = [...callbacksArr, cb]
     }
 

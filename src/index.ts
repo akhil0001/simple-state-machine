@@ -4,9 +4,9 @@ import { createMachine } from "./machine/createMachine";
 interface ITimerContext {
     currentTime: number
 }
+type TStates = Array<'idle' | 'running'>;
+const states: TStates = ['idle', 'running']
 
-const states = ['idle', 'running'] as const
-type TStates = typeof states[number];
 // actions
 const decrementTime = ({ context }: { context: ITimerContext }) => {
     return { ...context, currentTime: context.currentTime - 1 }
@@ -22,11 +22,11 @@ function moveToIdleWhenDone(context: ITimerContext) {
 }
 
 // machine config
-const timerMachineConfig = new MachineConfig<ITimerContext>({
+const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
     currentTime: 5
 });
 
-const { idle, running } = timerMachineConfig.addStates<TStates>(states);
+const { idle, running } = timerMachineConfig.addStates(states);
 
 idle.on('start')
     .moveTo('running')
@@ -54,11 +54,20 @@ function init() {
 
     // init Machine
     const { start, subscribe, send } = createMachine(timerMachineConfig);
-
     subscribe((state) => {
         const { currentTime } = state.context;
         if (displayTimeEl) {
             displayTimeEl.innerText = '' + currentTime;
+        }
+        if (state.value === 'idle') {
+            startBtn?.removeAttribute('disabled')
+            pauseBtn?.setAttribute('disabled', 'true')
+            stopBtn?.setAttribute('disabled', 'true')
+        }
+        else if (state.value === 'running') {
+            startBtn?.setAttribute('disabled', 'true')
+            pauseBtn?.removeAttribute('disabled')
+            stopBtn?.removeAttribute('disabled')
         }
     });
     subscribe(state => console.log(state.value))
