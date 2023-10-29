@@ -4,6 +4,8 @@ export type TDefaultContext = {
     [key: string]: any;
 }
 
+export type TDefaultStates = readonly string[]
+
 export type TDefaultEvent = {
     type: string;
     data?: {
