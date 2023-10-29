@@ -2,7 +2,7 @@ import { State } from "./State";
 import { TDefaultContext, TDefaultStates } from "./types";
 
 type TStates<T extends readonly string[], IContext> = {
-    [TIndex in T[number]as string]: State<IContext, T>
+    [TIndex in T[number]]: State<IContext, T>
 } | Record<string, State<IContext, T>>
 
 
