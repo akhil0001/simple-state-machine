@@ -13,9 +13,9 @@ type TTargetState<IContext, AllStates extends readonly string[]> = ((context: IC
 export class State<IContext, AllStates extends readonly string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
-    stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
-    stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
-    callback: TCallback<IContext> = () => () => { };
+    protected stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
+    protected stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
+    protected callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
     delay: number = 0;
     constructor(val: string) {
@@ -53,5 +53,13 @@ export class State<IContext, AllStates extends readonly string[]> {
         const boundUpdateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
         const boundMoveTo = this.#moveTo.bind(this)
         return { fireAndForget: boundFireAndForget, updateContext: boundUpdateContext, moveTo: boundMoveTo }
+    }
+    getConfig() {
+        const { stateEventsMap, stateMap, callback } = this;
+        return {
+            callback,
+            stateMap,
+            stateEventsMap
+        }
     }
 }
