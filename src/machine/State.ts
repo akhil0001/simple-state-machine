@@ -3,14 +3,14 @@ import { StateEvent } from "./StateEvent";
 import { TCallback, TSendBack } from "./types";
 
 
-type TConvertArrToObj<TArr extends string[]> = {
+type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
 }
 
-type TTargetState<IContext, AllStates extends string[]> = ((context: IContext) => keyof TConvertArrToObj<AllStates>) | keyof TConvertArrToObj<AllStates>;
+type TTargetState<IContext, AllStates extends readonly string[]> = ((context: IContext) => keyof TConvertArrToObj<AllStates>) | keyof TConvertArrToObj<AllStates>;
 // TODO: Refactor the repeated logic to move to separate internal functions
 // TODO: Have a similar func like assign of xstate
-export class State<IContext, AllStates extends string[]> {
+export class State<IContext, AllStates extends readonly string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
     stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
