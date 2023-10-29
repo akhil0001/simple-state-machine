@@ -4,8 +4,8 @@ import { createMachine } from "./machine/createMachine";
 interface ITimerContext {
     currentTime: number
 }
-type TStates = Array<'idle' | 'running'>;
-const states: TStates = ['idle', 'running']
+type TStates = Array<'idle' | 'running' | 'decideWhereToGo'>;
+const states: TStates = ['idle', 'running', 'decideWhereToGo']
 
 // actions
 const decrementTime = ({ context }: { context: ITimerContext }) => {
@@ -16,10 +16,6 @@ const resetTime = ({ context }: { context: ITimerContext }) => {
     return { ...context, currentTime: 0 }
 }
 
-// conds
-function moveToIdleWhenDone(context: ITimerContext) {
-    return context.currentTime === 1 ? 'idle' : 'running'
-}
 
 // machine config
 const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
@@ -41,8 +37,10 @@ running.on('pause')
     .moveTo('idle')
 
 running.after(1000)
-    .moveTo(moveToIdleWhenDone)
+    .moveTo('decideWhereToGo')
     .updateContext(decrementTime)
+
+// decideWhereToGo.
 
 // UI Logic
 
