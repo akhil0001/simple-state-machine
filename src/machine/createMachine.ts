@@ -21,8 +21,8 @@ type TCreateMachineReturn<U> = {
 // TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
 export function createMachine<U extends TDefaultContext>(config: MachineConfig<U>): TCreateMachineReturn<U> {
-    const { states, initialState, context: initialContext } = config;
-    let _currentState = initialState.value === '' ? states[Object.keys(states)[0]] : initialState
+    const { states, context: initialContext } = config;
+    let _currentState = states[Object.keys(states)[0]]
     let _context = initialContext;
     let isStarted = false;
     let cleanupEffects = () => { };
