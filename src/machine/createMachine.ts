@@ -22,7 +22,7 @@ type TCreateMachineReturn<U, V extends TDefaultStates> = {
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates>(config: MachineConfig<U, V>): TCreateMachineReturn<U, V> {
     const { states, context: initialContext } = config;
-    const k = Object.keys(states)[0]
+    const k: keyof typeof states = Object.keys(states)[0]
     let _currentState = states[k]
     let _context = initialContext;
     let isStarted = false;
@@ -48,12 +48,13 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _currentState = nextState;
         currentState.value = _currentState.value;
         _publishEventsToAllSubscribers();
-        const nextAction = _currentState.stateEventsMap.get('after')
+        const { callback, stateEventsMap } = _currentState.getConfig()
+        const nextAction = stateEventsMap.get('after')
         const delay = _currentState.delay;
         if (nextAction) {
             timerId = setTimeout(() => send('after'), delay)
         }
-        cleanupEffects = _currentState.callback(_context, send);
+        cleanupEffects = callback(_context, send);
     }
 
     function _executeActions(action: TStateEvent<U>, actionType: string) {
@@ -72,7 +73,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        const nextStateVal = _currentState.stateMap.get(actionType);
+        const { stateEventsMap, stateMap } = _currentState.getConfig()
+        const nextStateVal = stateMap.get(actionType);
         if (nextStateVal == undefined) {
             console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
         }
@@ -80,7 +82,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             cleanupEffects();
             clearTimeout(timerId)
             const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
-            const eventsCollection = _currentState.stateEventsMap.get(actionType)?.stateEventCollection ?? [];
+            const eventsCollection = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
             _updateState(nextState as State<U, V>);
         }
