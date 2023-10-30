@@ -9,10 +9,12 @@ type TConvertArrToObj<TArr extends readonly string[]> = {
 
 type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<AllStates>;
 
+type TCond<IContext> = (context: IContext) => boolean;
+
 type TStateJSON<IContext, AllStates extends readonly string[]> = {
     [action: string]: {
         target: TTargetState<AllStates>,
-        cond: ((context: IContext) => boolean)
+        cond: TCond<IContext>
     }
 }
 
@@ -44,22 +46,29 @@ export class State<IContext, AllStates extends readonly string[]> {
         const boundOn = this.on.bind(this);
         return { on: boundOn }
     }
+    #if(cond: TCond<IContext>) {
+        this.stateJSON[this.#chainedActionType].cond = cond;
+    }
     on(actionType: string) {
         const stateEvent = new StateEvent<IContext>();
         this.#stateEvent = stateEvent;
-        this.stateMap.set(actionType, this.value);
+        this.stateJSON[actionType] = {
+            target: this.value,
+            cond: returnTrue
+        }
         this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
         const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-        return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext }
+        const boundIf = this.#if.bind(this)
+        return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext, if: boundIf }
     }
-    #moveTo(target: TTargetState<IContext, AllStates>) {
-        this.stateMap.set(this.#chainedActionType, target);
+    #moveTo(target: TTargetState<AllStates>) {
+        this.stateJSON[this.#chainedActionType].target = target;
         const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
         const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-
-        return { fireAndForget: fireAndForget, updateContext }
+        const boundIf = this.#if.bind(this)
+        return { fireAndForget: fireAndForget, updateContext, if: boundIf }
     }
     after(time: number) {
         this.delay = time;
@@ -72,10 +81,10 @@ export class State<IContext, AllStates extends readonly string[]> {
         return { fireAndForget: boundFireAndForget, updateContext: boundUpdateContext, moveTo: boundMoveTo }
     }
     getConfig() {
-        const { stateEventsMap, stateMap, callback } = this;
+        const { stateEventsMap, stateJSON, callback } = this;
         return {
             callback,
-            stateMap,
+            stateJSON,
             stateEventsMap
         }
     }
