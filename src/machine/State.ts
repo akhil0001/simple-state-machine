@@ -7,20 +7,37 @@ type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
 }
 
-type TTargetState<IContext, AllStates extends readonly string[]> = ((context: IContext) => keyof TConvertArrToObj<AllStates>) | keyof TConvertArrToObj<AllStates>;
+type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<AllStates>;
+
+type TStateJSON<IContext, AllStates extends readonly string[]> = {
+    [action: string]: {
+        target: TTargetState<AllStates>,
+        cond: ((context: IContext) => boolean)
+    }
+}
+
+const returnTrue = () => true;
+
 // TODO: Refactor the repeated logic to move to separate internal functions
 // TODO: Have a similar func like assign of xstate
 export class State<IContext, AllStates extends readonly string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
-    protected stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
+    // protected stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
+    protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
     protected callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
     delay: number = 0;
     constructor(val: string) {
         this.value = val;
-        this.stateMap.set('after', this.value)
+        this.#setInitialAfter()
+    }
+    #setInitialAfter() {
+        this.stateJSON['after'] = {
+            target: this.value,
+            cond: returnTrue
+        }
     }
     invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {
         this.callback = callback;
