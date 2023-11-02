@@ -25,12 +25,12 @@ const returnTrue = () => true;
 export class State<IContext, AllStates extends readonly string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
-    // protected stateMap: Map<string, TTargetState<IContext, AllStates>> = new Map();
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
     protected callback: TCallback<IContext> = () => () => { };
     #chainedActionType: string = '';
     delay: number = 0;
+
     constructor(val: string) {
         this.value = val;
         this.#setInitialAfter()
@@ -41,44 +41,45 @@ export class State<IContext, AllStates extends readonly string[]> {
             cond: returnTrue
         }
     }
-    invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {
-        this.callback = callback;
-        const boundOn = this.on.bind(this);
-        return { on: boundOn }
+    #initStateEvent() {
+        const stateEvent = new StateEvent<IContext>();
+        this.#stateEvent = stateEvent;
     }
+
     #if(cond: TCond<IContext>) {
         this.stateJSON[this.#chainedActionType].cond = cond;
     }
+    #returnStateEventActions() {
+        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
+        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
+        return { fireAndForget, updateContext };
+    }
+    #moveTo(target: TTargetState<AllStates>) {
+        this.stateJSON[this.#chainedActionType].target = target;
+        const returnActions = this.#returnStateEventActions()
+        const boundIf = this.#if.bind(this)
+        return { ...returnActions, if: boundIf }
+    }
     on(actionType: string) {
-        const stateEvent = new StateEvent<IContext>();
-        this.#stateEvent = stateEvent;
+        this.#initStateEvent()
         this.stateJSON[actionType] = {
             target: this.value,
             cond: returnTrue
         }
         this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
-        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
-        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-        const boundIf = this.#if.bind(this)
-        return { moveTo: this.#moveTo.bind(this), fireAndForget, updateContext, if: boundIf }
-    }
-    #moveTo(target: TTargetState<AllStates>) {
-        this.stateJSON[this.#chainedActionType].target = target;
-        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
-        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-        const boundIf = this.#if.bind(this)
-        return { fireAndForget: fireAndForget, updateContext, if: boundIf }
+        const returnActions = this.#returnStateEventActions()
+        return { moveTo: this.#moveTo.bind(this), ...returnActions }
     }
     after(time: number) {
         this.delay = time;
         this.#chainedActionType = 'after';
-        this.#stateEvent = new StateEvent<IContext>();
+        this.#initStateEvent()
         this.stateEventsMap.set('after', this.#stateEvent)
-        const boundFireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
-        const boundUpdateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
+        const returnActions = this.#returnStateEventActions()
         const boundMoveTo = this.#moveTo.bind(this)
-        return { fireAndForget: boundFireAndForget, updateContext: boundUpdateContext, moveTo: boundMoveTo }
+        const boundIf = this.#if.bind(this)
+        return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
     }
     getConfig() {
         const { stateEventsMap, stateJSON, callback } = this;
@@ -87,5 +88,10 @@ export class State<IContext, AllStates extends readonly string[]> {
             stateJSON,
             stateEventsMap
         }
+    }
+    invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {
+        this.callback = callback;
+        const boundOn = this.on.bind(this);
+        return { on: boundOn }
     }
 }
