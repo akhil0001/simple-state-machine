@@ -8,11 +8,11 @@ type TStates = Array<'idle' | 'running' | 'decideWhereToGo'>;
 const states: TStates = ['idle', 'running', 'decideWhereToGo']
 
 // actions
-const decrementTime = ({ context }: { context: ITimerContext }) => {
+const decrementTime = (context: ITimerContext) => {
     return { ...context, currentTime: context.currentTime - 1 }
 }
 
-const resetTime = ({ context }: { context: ITimerContext }) => {
+const resetTime = (context: ITimerContext) => {
     return { ...context, currentTime: 0 }
 }
 
@@ -31,7 +31,7 @@ idle.on('stop')
 
 running.on('stop')
     .moveTo('idle')
-    .updateContext(({ context }) => ({ ...context, currentTime: 60 }));
+    .updateContext(context => ({ ...context, currentTime: 60 }));
 
 running.on('pause')
     .moveTo('idle')
@@ -40,7 +40,12 @@ running.after(1000)
     .moveTo('decideWhereToGo')
     .updateContext(decrementTime)
 
-// decideWhereToGo.
+
+// decideWhereToGo.onEnter().
+// deciderWhereToGo.if(currentTime is greater than 0).alwaysMoveTo('running')
+// running.on('stop').if(currentTime is even number).updateContext(...)
+// running.on('stop').if(currentTime is odd number).updateContext(...)
+
 
 // UI Logic
 
