@@ -60,11 +60,11 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     function _executeActions(action: TStateEvent<U>, actionType: string) {
         const { type, callback } = action;
         if (type === 'updateContext') {
-            const newContext = callback({ context: _context, event: { type: actionType } });
+            const newContext = callback(_context, { type: actionType });
             _updateContext(newContext);
         }
         else if (type === 'fireAndForget') {
-            callback({ context: _context, event: { type: actionType } });
+            callback(_context, { type: actionType });
         }
     }
 
