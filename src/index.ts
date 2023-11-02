@@ -24,21 +24,38 @@ const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
 
 const { idle, running } = timerMachineConfig.addStates(states);
 
+idle.onEnter()
+    .fireAndForget(() => console.log('entered idle'))
+
 idle.on('start')
     .moveTo('running')
-idle.on('stop')
-    .updateContext(resetTime)
+
+idle.onExit()
+    .fireAndForget(() => console.log('exited idle'))
+
+running.onEnter()
+    .fireAndForget(() => console.log('entered running'))
+running.onExit()
+    .fireAndForget(() => console.log('exited running'))
+
+running.after(1000)
+    .moveTo('running')
+    .updateContext(decrementTime)
 
 running.on('stop')
     .moveTo('idle')
-    .updateContext(context => ({ ...context, currentTime: 60 }));
+    .updateContext(resetTime)
 
-running.on('pause')
-    .moveTo('idle')
+// running.on('stop')
+//     .moveTo('idle')
+//     .updateContext(context => ({ ...context, currentTime: 60 }));
 
-running.after(1000)
-    .moveTo('decideWhereToGo')
-    .updateContext(decrementTime)
+// running.on('pause')
+//     .moveTo('idle')
+
+// running.after(1000)
+//     .moveTo('decideWhereToGo')
+//     .updateContext(decrementTime)
 
 
 // decideWhereToGo.onEnter().
@@ -73,7 +90,7 @@ function init() {
             stopBtn?.removeAttribute('disabled')
         }
     });
-    subscribe(state => console.log(state.value))
+    subscribe(state => console.log(state.value, '>> sub'))
     start()
 
     startBtn?.addEventListener('click', () => send('start'))
