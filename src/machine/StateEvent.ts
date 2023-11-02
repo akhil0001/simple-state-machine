@@ -7,12 +7,12 @@ export class StateEvent<IContext> {
     constructor() {
         this.stateEventCollection = [];
     }
-    fireAndForget(cb: ({ context, event }: { context: IContext, event: TDefaultEvent }) => void) {
+    fireAndForget(cb: (context: IContext, event: TDefaultEvent) => void) {
         const oldStateEventCollection = this.stateEventCollection;
         this.stateEventCollection = [...oldStateEventCollection, { type: 'fireAndForget', callback: cb }]
         return this
     }
-    updateContext(cb: ({ context, event }: { context: IContext, event: TDefaultEvent }) => IContext) {
+    updateContext(cb: (context: IContext, event: TDefaultEvent) => IContext) {
         const oldStateContextCollection = this.stateEventCollection;
         this.stateEventCollection = [...oldStateContextCollection, { type: 'updateContext', callback: cb }]
         return this
