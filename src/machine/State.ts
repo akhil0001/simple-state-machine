@@ -14,7 +14,8 @@ type TCond<IContext> = (context: IContext) => boolean;
 type TStateJSON<IContext, AllStates extends readonly string[]> = {
     [action: string]: {
         target: TTargetState<AllStates>,
-        cond: TCond<IContext>
+        cond: TCond<IContext>,
+        isSetByDefault: boolean
     }
 }
 
@@ -31,6 +32,7 @@ export class State<IContext, AllStates extends readonly string[]> {
     #chainedActionType: string = '';
     delay: number = 0;
 
+
     constructor(val: string) {
         this.value = val;
         this.#setInitialAfter()
@@ -38,7 +40,8 @@ export class State<IContext, AllStates extends readonly string[]> {
     #setInitialAfter() {
         this.stateJSON['after'] = {
             target: this.value,
-            cond: returnTrue
+            cond: returnTrue,
+            isSetByDefault: true
         }
     }
     #initStateEvent() {
@@ -56,6 +59,7 @@ export class State<IContext, AllStates extends readonly string[]> {
     }
     #moveTo(target: TTargetState<AllStates>) {
         this.stateJSON[this.#chainedActionType].target = target;
+        this.stateJSON[this.#chainedActionType].isSetByDefault = false;
         const returnActions = this.#returnStateEventActions()
         const boundIf = this.#if.bind(this)
         return { ...returnActions, if: boundIf }
@@ -64,12 +68,38 @@ export class State<IContext, AllStates extends readonly string[]> {
         this.#initStateEvent()
         this.stateJSON[actionType] = {
             target: this.value,
-            cond: returnTrue
+            cond: returnTrue,
+            isSetByDefault: true
         }
         this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
         const returnActions = this.#returnStateEventActions()
         return { moveTo: this.#moveTo.bind(this), ...returnActions }
+    }
+    onEnter() {
+        this.#initStateEvent();
+        const actionType = '##enter##'
+        this.stateJSON[actionType] = {
+            target: this.value,
+            isSetByDefault: false,
+            cond: returnTrue
+        }
+        this.stateEventsMap.set(actionType, this.#stateEvent);
+        this.#chainedActionType = actionType;
+        const returnActions = this.#returnStateEventActions();
+        return { moveTo: this.#moveTo.bind(this), ...returnActions };
+    }
+    onExit() {
+        this.#initStateEvent();
+        const actionType = '##exit##';
+        this.stateJSON[actionType] = {
+            target: this.value,
+            cond: returnTrue,
+            isSetByDefault: true
+        }
+        this.stateEventsMap.set(actionType, this.#stateEvent);
+        const returnActions = this.#returnStateEventActions();
+        return { ...returnActions }
     }
     after(time: number) {
         this.delay = time;
