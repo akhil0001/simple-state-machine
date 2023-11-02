@@ -73,15 +73,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        const { stateEventsMap, stateMap } = _currentState.getConfig()
-        const nextStateVal = stateMap.get(actionType);
+        const { stateEventsMap, stateJSON } = _currentState.getConfig()
+        const nextStateVal = stateJSON[actionType].target
         if (nextStateVal == undefined) {
             console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
         }
         else {
             cleanupEffects();
             clearTimeout(timerId)
-            const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
+            const nextState = states[nextStateVal];
             const eventsCollection = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
             _updateState(nextState as State<U, V>);
