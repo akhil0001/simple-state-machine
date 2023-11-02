@@ -50,6 +50,11 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _publishEventsToAllSubscribers();
         const { callback, stateEventsMap } = _currentState.getConfig()
         const nextAction = stateEventsMap.get('after')
+        const entryAction = stateEventsMap.get('##enter##');
+        if (entryAction) {
+            const eventsCollection = stateEventsMap.get('##enter##')?.stateEventCollection ?? [];
+            eventsCollection.forEach(event => _executeActions(event, '##enter##'));
+        }
         const delay = _currentState.delay;
         if (nextAction) {
             timerId = setTimeout(() => send('after'), delay)
@@ -75,6 +80,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         }
         const { stateEventsMap, stateJSON } = _currentState.getConfig()
         const nextStateVal = stateJSON[actionType].target
+        const isSetByDefault = stateJSON[actionType].isSetByDefault
         if (nextStateVal == undefined) {
             console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
         }
@@ -84,7 +90,11 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             const nextState = states[nextStateVal];
             const eventsCollection = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
             eventsCollection.forEach(event => _executeActions(event, actionType));
-            _updateState(nextState as State<U, V>);
+            if (!isSetByDefault) {
+                const eventsCollection = stateEventsMap.get('##exit##')?.stateEventCollection ?? [];
+                eventsCollection.forEach(event => _executeActions(event, '##exit##'));
+                _updateState(nextState as State<U, V>);
+            }
         }
     }
 
@@ -94,7 +104,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function start() {
         isStarted = true;
-        _publishEventsToAllSubscribers()
+        _updateState(_currentState)
     }
 
     return { state: currentState, send, subscribe, start };
