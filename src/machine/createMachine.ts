@@ -143,7 +143,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         currentState.context = _context
     }
 
-    function _runEffects(effects: TStateEvent<U>[], actionType: string) {
+    function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
@@ -157,15 +157,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runEntry(state: State<U, V>) {
-        console.log('running entty', state.value)
         _internalState = 'entered'
         _currentState = state;
         currentState.value = _currentState.value;
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const enteredJSON = stateJSON['##enter##'];
         if (!enteredJSON) {
-            _runAfter(state);
-            return;
+            return _runAlways(state);
+
         }
         const { target, cond } = enteredJSON;
         if (cond(_context)) {
@@ -176,12 +175,38 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                 return _runExit(state, nextState)
             }
         }
-        return _runAfter(state);
+        return _runAlways(state);
+    }
+
+    function _runAlways(state: State<U, V>) {
+        _internalState = 'living';
+        const { stateJSON, stateEventsMap } = _getStateConfig(state);
+        const alwaysJSONArr = Reflect.ownKeys(stateJSON)
+            .filter(val => {
+                return typeof val === 'symbol' && val.description === '##always##'
+            });
+
+        if (alwaysJSONArr.length === 0) {
+            return _runAfter(state);
+        }
+
+        alwaysJSONArr.every((event) => {
+            const { target, cond, isSetByDefault } = stateJSON[event];
+            if (cond(_context)) {
+                const effects = stateEventsMap.get(event)?.stateEventCollection ?? [];
+                _runEffects(effects, event);
+                if (!isSetByDefault) {
+                    const nextState = states[target];
+                    return (_runExit(state, nextState), false);
+                }
+            }
+            return true;
+        });
+
+        return _runAfter(state)
     }
 
     function _runAfter(state: State<U, V>) {
-        console.log('running after')
-
         _internalState = 'living'
         const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
         const afterJSON = stateJSON['##after##'];
@@ -202,8 +227,6 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runLive(state: State<U, V>, actionType: string) {
-        console.log('running live')
-
         _internalState = 'living'
         const { stateEventsMap, stateJSON } = _getStateConfig(state);
         const eventJSON = stateJSON[actionType];
@@ -220,13 +243,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             }
         }
     }
-    // function _runInvoke(state: State<U, V>) {
-    //     _runLive(state)
-    // }
 
     function _runExit(state: State<U, V>, nextState: State<U, V>) {
-        console.log('running exit', state.value)
-
         _internalState = 'exited';
         clearTimeout(_timerId)
         const { stateJSON, stateEventsMap } = _getStateConfig(state);

@@ -11,8 +11,10 @@ type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<
 
 type TCond<IContext> = (context: IContext) => boolean;
 
+type TActionType = string | symbol;
+
 type TStateJSON<IContext, AllStates extends readonly string[]> = {
-    [action: string]: {
+    [key: TActionType]: {
         target: TTargetState<AllStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
@@ -27,11 +29,10 @@ export class State<IContext, AllStates extends readonly string[]> {
     value: string = '';
     #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
-    protected stateEventsMap: Map<string, StateEvent<IContext>> = new Map();
+    protected stateEventsMap: Map<TActionType, StateEvent<IContext>> = new Map();
     protected callback: TCallback<IContext> = () => () => { };
-    #chainedActionType: string = '';
-    delay: number = 0;
-
+    #chainedActionType: TActionType = '';
+    protected delay: number = 0;
 
     constructor(val: string) {
         this.value = val;
@@ -51,6 +52,8 @@ export class State<IContext, AllStates extends readonly string[]> {
 
     #if(cond: TCond<IContext>) {
         this.stateJSON[this.#chainedActionType].cond = cond;
+        const boundMoveTo = this.#moveTo.bind(this);
+        return { moveTo: boundMoveTo }
     }
     #returnStateEventActions() {
         const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
@@ -61,8 +64,7 @@ export class State<IContext, AllStates extends readonly string[]> {
         this.stateJSON[this.#chainedActionType].target = target;
         this.stateJSON[this.#chainedActionType].isSetByDefault = false;
         const returnActions = this.#returnStateEventActions()
-        const boundIf = this.#if.bind(this)
-        return { ...returnActions, if: boundIf }
+        return { ...returnActions }
     }
     on(actionType: string) {
         this.#initStateEvent()
@@ -74,20 +76,38 @@ export class State<IContext, AllStates extends readonly string[]> {
         this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
         const returnActions = this.#returnStateEventActions()
-        return { moveTo: this.#moveTo.bind(this), ...returnActions }
+        const boundIf = this.#if.bind(this)
+        return { moveTo: this.#moveTo.bind(this), if: boundIf, ...returnActions }
     }
     onEnter() {
         this.#initStateEvent();
         const actionType = '##enter##'
         this.stateJSON[actionType] = {
             target: this.value,
-            isSetByDefault: false,
+            isSetByDefault: true,
             cond: returnTrue
         }
         this.stateEventsMap.set(actionType, this.#stateEvent);
         this.#chainedActionType = actionType;
         const returnActions = this.#returnStateEventActions();
-        return { moveTo: this.#moveTo.bind(this), ...returnActions };
+        return { ...returnActions };
+    }
+    always() {
+        this.#initStateEvent();
+        const actionType = Symbol('##always##');
+        this.#chainedActionType = actionType
+        this.stateJSON[actionType] = {
+            target: this.value,
+            isSetByDefault: true,
+            cond: returnTrue
+        }
+
+        this.stateEventsMap.set(actionType, this.#stateEvent);
+        const boundIf = this.#if.bind(this);
+        const boundMoveTo = this.#moveTo.bind(this);
+        const returnActions = this.#returnStateEventActions();
+
+        return { ...returnActions, if: boundIf, moveTo: boundMoveTo }
     }
     onExit() {
         this.#initStateEvent();
@@ -103,20 +123,26 @@ export class State<IContext, AllStates extends readonly string[]> {
     }
     after(time: number) {
         this.delay = time;
-        this.#chainedActionType = 'after';
+        this.#chainedActionType = '##after##';
+        this.stateJSON[this.#chainedActionType] = {
+            target: this.value,
+            cond: returnTrue,
+            isSetByDefault: true
+        }
         this.#initStateEvent()
-        this.stateEventsMap.set('after', this.#stateEvent)
+        this.stateEventsMap.set('##after##', this.#stateEvent)
         const returnActions = this.#returnStateEventActions()
         const boundMoveTo = this.#moveTo.bind(this)
         const boundIf = this.#if.bind(this)
         return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
     }
     getConfig() {
-        const { stateEventsMap, stateJSON, callback } = this;
+        const { stateEventsMap, stateJSON, callback, delay } = this;
         return {
             callback,
             stateJSON,
-            stateEventsMap
+            stateEventsMap,
+            delay
         }
     }
     invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {

@@ -7,7 +7,7 @@ export type TDefaultContext = {
 export type TDefaultStates = readonly string[]
 
 export type TDefaultEvent = {
-    type: string;
+    type: string | symbol;
     data?: {
         [key: string]: any;
     }

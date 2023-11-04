@@ -13,8 +13,12 @@ const decrementTime = (context: ITimerContext) => {
 }
 
 const resetTime = (context: ITimerContext) => {
-    return { ...context, currentTime: 0 }
+    return { ...context, currentTime: 5 }
 }
+
+// conds
+
+const isTimeZero = (context: ITimerContext) => context.currentTime === 0;
 
 
 // machine config
@@ -22,47 +26,30 @@ const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
     currentTime: 5
 });
 
-const { idle, running } = timerMachineConfig.addStates(states);
+const { idle, running, decideWhereToGo } = timerMachineConfig.addStates(states);
 
-idle.onEnter()
-    .fireAndForget(() => console.log('entered idle'))
 
 idle.on('start')
     .moveTo('running')
 
-idle.onExit()
-    .fireAndForget(() => console.log('exited idle'))
-
-running.onEnter()
-    .fireAndForget(() => console.log('entered running'))
-running.onExit()
-    .fireAndForget(() => console.log('exited running'))
-
 running.after(1000)
-    .moveTo('running')
+    .moveTo('decideWhereToGo')
     .updateContext(decrementTime)
 
 running.on('stop')
     .moveTo('idle')
     .updateContext(resetTime)
 
-// running.on('stop')
-//     .moveTo('idle')
-//     .updateContext(context => ({ ...context, currentTime: 60 }));
+running.on('pause')
+    .moveTo('idle')
 
-// running.on('pause')
-//     .moveTo('idle')
+decideWhereToGo.always()
+    .if(isTimeZero)
+    .moveTo('idle')
+    .updateContext(resetTime)
 
-// running.after(1000)
-//     .moveTo('decideWhereToGo')
-//     .updateContext(decrementTime)
-
-
-// decideWhereToGo.onEnter().
-// deciderWhereToGo.if(currentTime is greater than 0).alwaysMoveTo('running')
-// running.on('stop').if(currentTime is even number).updateContext(...)
-// running.on('stop').if(currentTime is odd number).updateContext(...)
-
+decideWhereToGo.always()
+    .moveTo('running')
 
 // UI Logic
 
