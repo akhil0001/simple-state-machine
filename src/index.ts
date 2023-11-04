@@ -75,7 +75,11 @@ function init() {
             stopBtn?.removeAttribute('disabled')
         }
     });
-    subscribe(state => console.log(state.value, '>> sub'))
+    subscribe((state) => {
+        if (state.value !== state.history) {
+            console.log(state.history, '>', state.value)
+        }
+    })
     start()
 
     startBtn?.addEventListener('click', () => send('start'))

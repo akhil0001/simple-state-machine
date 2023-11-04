@@ -5,6 +5,7 @@ import { TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 type TCurrentState<U, V extends TDefaultStates> = {
     value: V[number];
+    history: V[number];
     context: U
 }
 
@@ -124,12 +125,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     let _currentState = states[initialStateValue]
     const currentState = {
         value: _currentState.value,
+        history: _currentState.value,
         context: _context // TODO: Should deep clone this
     }
+
     let isStarted = false;
     let _internalState: TInternalState = 'dead';
     let _timerId = -1;
-    let callbacksArr: TSubscribeCb<U, V>[] = []
+    let callbacksArr: TSubscribeCb<U, V>[] = [];
+
     function _setIsStarted(value: boolean) {
         isStarted = value;
     }
@@ -140,7 +144,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _setContext(newContext: U) {
         _context = { ...newContext };
-        currentState.context = _context
+        currentState.context = _context;
+        _runSubscriberCallback()
+    }
+
+    function _setCurrentState(newState: State<U, V>) {
+        currentState.history = _currentState.value;
+        _currentState = newState;
+        currentState.value = newState.value;
+        _runSubscriberCallback()
     }
 
     function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
@@ -158,8 +170,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runEntry(state: State<U, V>) {
         _internalState = 'entered'
-        _currentState = state;
-        currentState.value = _currentState.value;
+        _setCurrentState(state)
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const enteredJSON = stateJSON['##enter##'];
         if (!enteredJSON) {
@@ -222,7 +233,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                     const nextState = states[target]
                     _runExit(state, nextState)
                 }
-            }, delay)
+            }, delay);
         }
     }
 
@@ -250,15 +261,22 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const exitedJSON = stateJSON['##exit##'];
         if (!exitedJSON) {
-            return _next(nextState)
+            _next(nextState)
+            return
         }
         const effects = stateEventsMap.get('##exit##')?.stateEventCollection ?? [];
         _runEffects(effects, '##exit##')
-        return _next(nextState)
+        _next(nextState)
+        return;
+    }
+
+    function _runSubscriberCallback() {
+        callbacksArr.forEach(cb => {
+            cb(currentState)
+        })
     }
 
     function _next(nextState: State<U, V>, actionType: string = '') {
-
         if (_internalState === 'dead') {
             _setIsStarted(true)
             _runEntry(nextState)
@@ -269,7 +287,6 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         else if (_internalState === 'living') {
             _runLive(nextState, actionType)
         }
-        callbacksArr.forEach(cb => cb(currentState))
     }
 
     function _getStateConfig(state: State<U, V>) {
