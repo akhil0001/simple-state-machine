@@ -4,14 +4,16 @@ import { IDefaultEvent, TUpdateContextEventCallback } from "./machine/types";
 
 interface ITimerContext {
     currentTime: number,
-    limit: number
+    limit: number,
+    timerInputEl: HTMLElement | null
 }
-type TStates = Array<'idle' | 'running' | 'decideWhereToGo'>;
-const states: TStates = ['idle', 'running', 'decideWhereToGo']
+type TStates = Array<'idle' | 'running' | 'decideWhereToGo' | 'ready'>;
+const states: TStates = ['idle', 'running', 'decideWhereToGo', 'ready']
 interface ITimerEvents extends IDefaultEvent {
-    type: 'start' | 'stop' | 'pause' | 'timeChange',
+    type: 'start' | 'stop' | 'pause' | 'timeChange' | 'updateTimerInputEl',
     data?: {
-        time?: number
+        time?: number,
+        timerInputEl?: HTMLElement
     }
 }
 // actions
@@ -32,16 +34,43 @@ const isTimeZero = (context: ITimerContext) => context.currentTime === 0;
 // machine config
 const timerMachineConfig = new MachineConfig<ITimerContext, TStates, ITimerEvents>({
     currentTime: 5,
-    limit: 0
+    limit: 0,
+    timerInputEl: null
 });
 
-const { idle, running, decideWhereToGo } = timerMachineConfig.addStates(states);
+const { idle, running, decideWhereToGo, ready } = timerMachineConfig.addStates(states);
+
+idle.on('updateTimerInputEl')
+    .moveTo('ready')
+    .updateContext((context, event) => ({ ...context, timerInputEl: event.data?.timerInputEl ?? context.timerInputEl }))
 
 
-idle.on('start')
+ready.invokeCallback((context, sendBack) => {
+    const { timerInputEl } = context;
+    const inputEvtListener = (e: HTMLElementEventMap['input']) => {
+        const target = e.target as HTMLInputElement;
+        sendBack({
+            type: 'timeChange',
+            data: {
+                time: Number(target.value ?? 0)
+            }
+        })
+    }
+    timerInputEl?.addEventListener('input', inputEvtListener)
+    return () => {
+        console.log('removed event listener')
+        timerInputEl?.removeEventListener('input', inputEvtListener)
+    }
+})
+
+ready.on('start')
     .moveTo('running')
+    .fireAndForget(context => {
+        const inputEl = context.timerInputEl as HTMLInputElement;
+        inputEl.value = '';
+    })
 
-idle.on('timeChange')
+ready.on('timeChange')
     .updateContext(setTime)
 
 running.after(1000)
@@ -49,15 +78,15 @@ running.after(1000)
     .updateContext(decrementTime)
 
 running.on('stop')
-    .moveTo('idle')
+    .moveTo('ready')
     .updateContext(resetTime)
 
 running.on('pause')
-    .moveTo('idle')
+    .moveTo('ready')
 
 decideWhereToGo.always()
     .if(isTimeZero)
-    .moveTo('idle')
+    .moveTo('ready')
     .updateContext(resetTime)
 
 decideWhereToGo.always()
@@ -74,12 +103,17 @@ function init() {
 
     // init Machine
     const { start, subscribe, send } = createMachine(timerMachineConfig);
+
+
     subscribe('allChanges', (state) => {
         const { currentTime } = state.context;
         if (displayTimeEl) {
             displayTimeEl.innerText = '' + currentTime;
         }
         if (state.value === 'idle') {
+            startBtn?.setAttribute('disabled', 'true')
+        }
+        if (state.value === 'ready') {
             startBtn?.removeAttribute('disabled')
             pauseBtn?.setAttribute('disabled', 'true')
             stopBtn?.setAttribute('disabled', 'true')
@@ -92,12 +126,13 @@ function init() {
             stopBtn?.removeAttribute('disabled')
         }
     });
-    timerInput?.addEventListener('input', (e) => {
-        const target = e.currentTarget as HTMLInputElement;
-        send({ type: 'timeChange', data: { time: Number(target.value ?? 0) } })
-    });
-
     start()
+    send({
+        type: 'updateTimerInputEl',
+        data: {
+            timerInputEl: timerInput!
+        }
+    })
 
     startBtn?.addEventListener('click', () => send('start'))
     pauseBtn?.addEventListener('click', () => send('pause'))

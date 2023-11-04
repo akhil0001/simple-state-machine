@@ -25,6 +25,6 @@ export type TStateEvent<IContext, IEvents> = {
     type: 'updateContext',
     callback: TStateEventCallback<IContext, IEvents, IContext>
 }
-export type TSendBack = (actionType: string) => void
+export type TSendBack<IEvents extends IDefaultEvent> = (action: IEvents['type'] | IEvents) => void
 
-export type TCallback<IContext> = (context: IContext, sendBack: TSendBack) => () => void;
+export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: IContext, sendBack: TSendBack<IEvents>) => () => void;

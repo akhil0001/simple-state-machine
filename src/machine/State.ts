@@ -23,14 +23,13 @@ type TStateJSON<IContext, AllStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-// TODO: Refactor the repeated logic to move to separate internal functions
 // TODO: Have a similar func like assign of xstate
 export class State<IContext, AllStates extends readonly string[], IEvents extends IDefaultEvent> {
     value: string = '';
     #stateEvent: StateEvent<IContext, IEvents> = new StateEvent<IContext, IEvents>();
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
-    protected callback: TCallback<IContext> = () => () => { };
+    protected callback: TCallback<IContext, IEvents> = () => () => { };
     #chainedActionType: TActionType = '';
     protected delay: number = 0;
 
@@ -145,7 +144,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
             delay
         }
     }
-    invokeCallback(callback: (context: IContext, sendBack: TSendBack) => () => void) {
+    invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void) {
         this.callback = callback;
         const boundOn = this.on.bind(this);
         return { on: boundOn }

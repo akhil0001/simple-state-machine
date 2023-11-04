@@ -37,11 +37,12 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     let isStarted = false;
     let _internalState: TInternalState = 'dead';
-    let _timerId = -1;
     let callbacksArr: {
         type: TSubscriberType,
         cb: TSubscribeCb<U, V>
     }[] = [];
+
+    let _cleanUpEffectsQueue: Array<() => any> = [];
 
     function _setIsStarted(value: boolean) {
         isStarted = value;
@@ -77,6 +78,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         })
     }
 
+    function _runCleanupEffects() {
+        _cleanUpEffectsQueue.forEach(effect => {
+            if (typeof effect === 'function') {
+                effect();
+            }
+        })
+        _cleanUpEffectsQueue = []
+    }
+
     function _runEntry(state: State<U, V, W>) {
         _internalState = 'entered'
         _setCurrentState(state)
@@ -107,7 +117,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             });
 
         if (alwaysJSONArr.length === 0) {
-            return _runAfter(state);
+            return _runService(state);
         }
 
         alwaysJSONArr.every((event) => {
@@ -123,7 +133,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             return true;
         });
 
-        return _runAfter(state)
+        return _runService(state)
+    }
+
+    function _runService(state: State<U, V, W>) {
+        _internalState = 'living';
+        const { callback: service } = _getStateConfig(state);
+        const cleanUpEffects = service(_context, send);
+        _cleanUpEffectsQueue.push(cleanUpEffects);
+        _runAfter(state)
     }
 
     function _runAfter(state: State<U, V, W>) {
@@ -136,15 +154,19 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { target, cond, isSetByDefault } = afterJSON;
         if (cond(_context)) {
             const effects = stateEventsMap.get('##after##')?.stateEventCollection ?? [];
-            _timerId = setTimeout(() => {
+            const _timerId = setTimeout(() => {
                 _runEffects(effects, '##after##')
                 if (!isSetByDefault) {
                     const nextState = states[target]
                     _runExit(state, nextState)
                 }
             }, delay);
+            const cleanUpEffect = () => clearTimeout(_timerId)
+            _cleanUpEffectsQueue.push(cleanUpEffect)
         }
     }
+
+
 
     function _runLive(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
         _internalState = 'living'
@@ -166,7 +188,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
         _internalState = 'exited';
-        clearTimeout(_timerId)
+        _runCleanupEffects()
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const exitedJSON = stateJSON['##exit##'];
         if (!exitedJSON) {
