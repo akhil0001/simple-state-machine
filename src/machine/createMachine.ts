@@ -13,7 +13,7 @@ type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) =>
 
 type TCreateMachineReturn<U, V extends TDefaultStates> = {
     state: TCurrentState<U, V>;
-    send: (actionType: string) => void;
+    send: (actionType: string, data?: Record<string, any>) => void;
     subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
     start: () => void
 }
@@ -64,15 +64,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _runSubscriberCallbacks('stateChange')
     }
 
-    function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
+    function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol, data: Record<string, any> = {}) {
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
-                const newContext = callback(_context, { type: actionType })
+                const newContext = callback(_context, { type: actionType, data })
                 _setContext(newContext)
             }
             if (type === 'fireAndForget') {
-                callback(_context, { type: actionType })
+                callback(_context, { type: actionType, data })
             }
         })
     }
@@ -146,7 +146,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         }
     }
 
-    function _runLive(state: State<U, V>, actionType: string) {
+    function _runLive(state: State<U, V>, actionType: string, data: Record<string, any>) {
         _internalState = 'living'
         const { stateEventsMap, stateJSON } = _getStateConfig(state);
         const eventJSON = stateJSON[actionType];
@@ -156,7 +156,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { target, cond, isSetByDefault } = eventJSON;
         if (cond(_context)) {
             const effects = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
-            _runEffects(effects, actionType)
+            _runEffects(effects, actionType, data)
             const nextState = states[target]
             if (!isSetByDefault) {
                 return _runExit(state, nextState)
@@ -190,7 +190,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         })
     }
 
-    function _next(nextState: State<U, V>, actionType: string = '') {
+    function _next(nextState: State<U, V>, actionType: string = '', data: Record<string, any> = {}) {
         if (_internalState === 'dead') {
             _setIsStarted(true)
             _runEntry(nextState)
@@ -199,7 +199,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             _runEntry(nextState)
         }
         else if (_internalState === 'living') {
-            _runLive(nextState, actionType)
+            _runLive(nextState, actionType, data)
         }
     }
 
@@ -207,12 +207,12 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return state.getConfig()
     }
 
-    function send(actionType: string) {
+    function send(actionType: string, data: Record<string, any> = {}) {
         if (!_getIsStarted()) {
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        _next(_currentState, actionType)
+        _next(_currentState, actionType, data)
     }
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
         callbacksArr = [...callbacksArr, { type, cb }]
