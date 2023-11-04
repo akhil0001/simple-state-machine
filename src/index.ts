@@ -17,9 +17,7 @@ const resetTime = (context: ITimerContext) => {
 }
 
 // conds
-
 const isTimeZero = (context: ITimerContext) => context.currentTime === 0;
-
 
 // machine config
 const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
