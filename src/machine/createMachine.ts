@@ -5,6 +5,7 @@ import { TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 type TCurrentState<U, V extends TDefaultStates> = {
     value: V[number];
+    history: V[number];
     context: U
 }
 
@@ -13,88 +14,211 @@ type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) =>
 type TCreateMachineReturn<U, V extends TDefaultStates> = {
     state: TCurrentState<U, V>;
     send: (actionType: string) => void;
-    subscribe: (cb: TSubscribeCb<U, V>) => void;
+    subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
     start: () => void
 }
 
+type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
+
+type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates>(config: MachineConfig<U, V>): TCreateMachineReturn<U, V> {
     const { states, context: initialContext } = config;
-    const k: keyof typeof states = Object.keys(states)[0]
-    let _currentState = states[k]
     let _context = initialContext;
-    let isStarted = false;
-    let cleanupEffects = () => { };
-    let timerId = -1;
-    let callbacksArr: TSubscribeCb<U, V>[] = [];
-    const currentState: TCurrentState<U, V> = {
+    const initialStateValue: keyof typeof states = Object.keys(states)[0];
+    let _currentState = states[initialStateValue]
+    const currentState = {
         value: _currentState.value,
-        context: _context
+        history: _currentState.value,
+        context: _context // TODO: Should deep clone this
     }
 
-    const _updateContext = (newContext: U) => {
-        _context = { ...newContext }
+    let isStarted = false;
+    let _internalState: TInternalState = 'dead';
+    let _timerId = -1;
+    let callbacksArr: {
+        type: TSubscriberType,
+        cb: TSubscribeCb<U, V>
+    }[] = [];
+
+    function _setIsStarted(value: boolean) {
+        isStarted = value;
+    }
+
+    function _getIsStarted() {
+        return isStarted;
+    }
+
+    function _setContext(newContext: U) {
+        _context = { ...newContext };
         currentState.context = _context;
-        _publishEventsToAllSubscribers()
+        _runSubscriberCallbacks('contextChange')
     }
 
-    const _publishEventsToAllSubscribers = () => {
-        callbacksArr.forEach(cb => cb(currentState));
+    function _setCurrentState(newState: State<U, V>) {
+        currentState.history = _currentState.value;
+        _currentState = newState;
+        currentState.value = newState.value;
+        _runSubscriberCallbacks('stateChange')
     }
 
-    function _updateState(nextState: State<U, V>) {
-        _currentState = nextState;
-        currentState.value = _currentState.value;
-        _publishEventsToAllSubscribers();
-        const { callback, stateEventsMap } = _currentState.getConfig()
-        const nextAction = stateEventsMap.get('after')
-        const delay = _currentState.delay;
-        if (nextAction) {
-            timerId = setTimeout(() => send('after'), delay)
-        }
-        cleanupEffects = callback(_context, send);
+    function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
+        effects.forEach(effect => {
+            const { type, callback } = effect;
+            if (type === 'updateContext') {
+                const newContext = callback(_context, { type: actionType })
+                _setContext(newContext)
+            }
+            if (type === 'fireAndForget') {
+                callback(_context, { type: actionType })
+            }
+        })
     }
 
-    function _executeActions(action: TStateEvent<U>, actionType: string) {
-        const { type, callback } = action;
-        if (type === 'updateContext') {
-            const newContext = callback({ context: _context, event: { type: actionType } });
-            _updateContext(newContext);
+    function _runEntry(state: State<U, V>) {
+        _internalState = 'entered'
+        _setCurrentState(state)
+        const { stateJSON, stateEventsMap } = _getStateConfig(state);
+        const enteredJSON = stateJSON['##enter##'];
+        if (!enteredJSON) {
+            return _runAlways(state);
+
         }
-        else if (type === 'fireAndForget') {
-            callback({ context: _context, event: { type: actionType } });
+        const { target, cond } = enteredJSON;
+        if (cond(_context)) {
+            const effects = stateEventsMap.get('##enter##')?.stateEventCollection ?? [];
+            _runEffects(effects, '##enter##')
+            if (target !== currentState.value) {
+                const nextState = states[target]
+                return _runExit(state, nextState)
+            }
         }
+        return _runAlways(state);
+    }
+
+    function _runAlways(state: State<U, V>) {
+        _internalState = 'living';
+        const { stateJSON, stateEventsMap } = _getStateConfig(state);
+        const alwaysJSONArr = Reflect.ownKeys(stateJSON)
+            .filter(val => {
+                return typeof val === 'symbol' && val.description === '##always##'
+            });
+
+        if (alwaysJSONArr.length === 0) {
+            return _runAfter(state);
+        }
+
+        alwaysJSONArr.every((event) => {
+            const { target, cond, isSetByDefault } = stateJSON[event];
+            if (cond(_context)) {
+                const effects = stateEventsMap.get(event)?.stateEventCollection ?? [];
+                _runEffects(effects, event);
+                if (!isSetByDefault) {
+                    const nextState = states[target];
+                    return (_runExit(state, nextState), false);
+                }
+            }
+            return true;
+        });
+
+        return _runAfter(state)
+    }
+
+    function _runAfter(state: State<U, V>) {
+        _internalState = 'living'
+        const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
+        const afterJSON = stateJSON['##after##'];
+        if (!afterJSON || !delay) {
+            return;
+        }
+        const { target, cond, isSetByDefault } = afterJSON;
+        if (cond(_context)) {
+            const effects = stateEventsMap.get('##after##')?.stateEventCollection ?? [];
+            _timerId = setTimeout(() => {
+                _runEffects(effects, '##after##')
+                if (!isSetByDefault) {
+                    const nextState = states[target]
+                    _runExit(state, nextState)
+                }
+            }, delay);
+        }
+    }
+
+    function _runLive(state: State<U, V>, actionType: string) {
+        _internalState = 'living'
+        const { stateEventsMap, stateJSON } = _getStateConfig(state);
+        const eventJSON = stateJSON[actionType];
+        if (!eventJSON) {
+            return;
+        }
+        const { target, cond, isSetByDefault } = eventJSON;
+        if (cond(_context)) {
+            const effects = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
+            _runEffects(effects, actionType)
+            const nextState = states[target]
+            if (!isSetByDefault) {
+                return _runExit(state, nextState)
+            }
+        }
+    }
+
+    function _runExit(state: State<U, V>, nextState: State<U, V>) {
+        _internalState = 'exited';
+        clearTimeout(_timerId)
+        const { stateJSON, stateEventsMap } = _getStateConfig(state);
+        const exitedJSON = stateJSON['##exit##'];
+        if (!exitedJSON) {
+            _next(nextState)
+            return
+        }
+        const effects = stateEventsMap.get('##exit##')?.stateEventCollection ?? [];
+        _runEffects(effects, '##exit##')
+        _next(nextState)
+        return;
+    }
+
+    function _runSubscriberCallbacks(type: TSubscriberType) {
+        callbacksArr.forEach(callback => {
+            if (callback.type === 'allChanges') {
+                callback.cb(currentState)
+            }
+            else if (callback.type === type) {
+                callback.cb(currentState)
+            }
+        })
+    }
+
+    function _next(nextState: State<U, V>, actionType: string = '') {
+        if (_internalState === 'dead') {
+            _setIsStarted(true)
+            _runEntry(nextState)
+        }
+        else if (_internalState === 'exited') {
+            _runEntry(nextState)
+        }
+        else if (_internalState === 'living') {
+            _runLive(nextState, actionType)
+        }
+    }
+
+    function _getStateConfig(state: State<U, V>) {
+        return state.getConfig()
     }
 
     function send(actionType: string) {
-        if (!isStarted) {
+        if (!_getIsStarted()) {
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        const { stateEventsMap, stateMap } = _currentState.getConfig()
-        const nextStateVal = stateMap.get(actionType);
-        if (nextStateVal == undefined) {
-            console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
-        }
-        else {
-            cleanupEffects();
-            clearTimeout(timerId)
-            const nextState = typeof nextStateVal === 'function' ? states[nextStateVal(_context)] : states[nextStateVal];
-            const eventsCollection = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
-            eventsCollection.forEach(event => _executeActions(event, actionType));
-            _updateState(nextState as State<U, V>);
-        }
+        _next(_currentState, actionType)
     }
-
-    function subscribe(cb: TSubscribeCb<U, V>) {
-        callbacksArr = [...callbacksArr, cb]
+    function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
+        callbacksArr = [...callbacksArr, { type, cb }]
     }
-
     function start() {
-        isStarted = true;
-        _publishEventsToAllSubscribers()
+        _next(_currentState)
     }
 
     return { state: currentState, send, subscribe, start };

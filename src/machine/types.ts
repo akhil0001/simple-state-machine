@@ -7,18 +7,20 @@ export type TDefaultContext = {
 export type TDefaultStates = readonly string[]
 
 export type TDefaultEvent = {
-    type: string;
+    type: string | symbol;
     data?: {
         [key: string]: any;
     }
 }
 
+type TStateEventCallback<IContext, ReturnType> = (context: IContext, event: TDefaultEvent) => ReturnType;
+
 export type TStateEvent<IContext> = {
     type: 'fireAndForget'
-    callback: ({ context, event }: { context: IContext, event: TDefaultEvent }) => void
+    callback: TStateEventCallback<IContext, void>
 } | {
     type: 'updateContext',
-    callback: ({ context, event }: { context: IContext, event: TDefaultEvent }) => IContext
+    callback: TStateEventCallback<IContext, IContext>
 }
 export type TSendBack = (actionType: string) => void
 

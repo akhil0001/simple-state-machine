@@ -8,39 +8,46 @@ type TStates = Array<'idle' | 'running' | 'decideWhereToGo'>;
 const states: TStates = ['idle', 'running', 'decideWhereToGo']
 
 // actions
-const decrementTime = ({ context }: { context: ITimerContext }) => {
+const decrementTime = (context: ITimerContext) => {
     return { ...context, currentTime: context.currentTime - 1 }
 }
 
-const resetTime = ({ context }: { context: ITimerContext }) => {
-    return { ...context, currentTime: 0 }
+const resetTime = (context: ITimerContext) => {
+    return { ...context, currentTime: 5 }
 }
 
+// conds
+const isTimeZero = (context: ITimerContext) => context.currentTime === 0;
 
 // machine config
 const timerMachineConfig = new MachineConfig<ITimerContext, TStates>({
     currentTime: 5
 });
 
-const { idle, running } = timerMachineConfig.addStates(states);
+const { idle, running, decideWhereToGo } = timerMachineConfig.addStates(states);
+
 
 idle.on('start')
     .moveTo('running')
-idle.on('stop')
-    .updateContext(resetTime)
-
-running.on('stop')
-    .moveTo('idle')
-    .updateContext(({ context }) => ({ ...context, currentTime: 60 }));
-
-running.on('pause')
-    .moveTo('idle')
 
 running.after(1000)
     .moveTo('decideWhereToGo')
     .updateContext(decrementTime)
 
-// decideWhereToGo.
+running.on('stop')
+    .moveTo('idle')
+    .updateContext(resetTime)
+
+running.on('pause')
+    .moveTo('idle')
+
+decideWhereToGo.always()
+    .if(isTimeZero)
+    .moveTo('idle')
+    .updateContext(resetTime)
+
+decideWhereToGo.always()
+    .moveTo('running')
 
 // UI Logic
 
@@ -52,7 +59,7 @@ function init() {
 
     // init Machine
     const { start, subscribe, send } = createMachine(timerMachineConfig);
-    subscribe((state) => {
+    subscribe('allChanges', (state) => {
         const { currentTime } = state.context;
         if (displayTimeEl) {
             displayTimeEl.innerText = '' + currentTime;
@@ -68,7 +75,9 @@ function init() {
             stopBtn?.removeAttribute('disabled')
         }
     });
-    subscribe(state => console.log(state.value))
+    subscribe('stateChange', (state) => {
+        console.log(state.history, '>', state.value)
+    })
     start()
 
     startBtn?.addEventListener('click', () => send('start'))
