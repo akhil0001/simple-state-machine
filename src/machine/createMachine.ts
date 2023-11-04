@@ -14,111 +14,17 @@ type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) =>
 type TCreateMachineReturn<U, V extends TDefaultStates> = {
     state: TCurrentState<U, V>;
     send: (actionType: string) => void;
-    subscribe: (cb: TSubscribeCb<U, V>) => void;
+    subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
     start: () => void
 }
 
 type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 
+type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
+
 // TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates>(config: MachineConfig<U, V>): TCreateMachineReturn<U, V> {
-
-    // // private variables
-    // const { states, context: initialContext } = config;
-    // const k: keyof typeof states = Object.keys(states)[0]
-    // let _currentState = states[k]
-    // let _context = initialContext;
-
-    // // internal variables
-    // let _isStarted = false;
-    // let timerId = -1;
-    // let cleanupEffects = () => { };
-    // let callbacksArr: TSubscribeCb<U, V>[] = [];
-
-    // // public variable
-    // const currentState: TCurrentState<U, V> = {
-    //     value: _currentState.value,
-    //     context: _context
-    // }
-
-    // const _updateContext = (newContext: U) => {
-    //     _context = { ...newContext }
-    //     currentState.context = _context;
-    //     _publishEventsToAllSubscribers()
-    // }
-
-    // const _publishEventsToAllSubscribers = () => {
-    //     callbacksArr.forEach(cb => cb(currentState));
-    // }
-
-    // function _updateState(nextState: State<U, V>) {
-    //     _currentState = nextState;
-    //     currentState.value = _currentState.value;
-    //     _publishEventsToAllSubscribers();
-    //     const { callback, stateEventsMap } = _currentState.getConfig()
-    //     const nextAction = stateEventsMap.get('after')
-    //     const entryAction = stateEventsMap.get('##enter##');
-    //     if (entryAction) {
-    //         const eventsCollection = stateEventsMap.get('##enter##')?.stateEventCollection ?? [];
-    //         eventsCollection.forEach(event => _executeActions(event, '##enter##'));
-    //     }
-    //     const delay = _currentState.delay;
-    //     if (nextAction) {
-    //         timerId = setTimeout(() => send('after'), delay)
-    //     }
-    //     cleanupEffects = callback(_context, send);
-    // }
-
-    // function _executeActions(action: TStateEvent<U>, actionType: string) {
-    //     const { type, callback } = action;
-    //     if (type === 'updateContext') {
-    //         const newContext = callback(_context, { type: actionType });
-    //         _updateContext(newContext);
-    //     }
-    //     else if (type === 'fireAndForget') {
-    //         callback(_context, { type: actionType });
-    //     }
-    // }
-
-    // function send(actionType: string) {
-    //     if (!_isStarted) {
-    //         console.warn('start the machine using .start method before sending the events');
-    //         return;
-    //     }
-    //     const { stateEventsMap, stateJSON } = _currentState.getConfig()
-    //     const guard = stateJSON[actionType].cond;
-    //     const shouldMoveToNextFlag = guard(_context)
-    //     if (!shouldMoveToNextFlag) {
-    //         return null;
-    //     }
-    //     const nextStateVal = stateJSON[actionType].target
-    //     const isSetByDefault = stateJSON[actionType].isSetByDefault
-    //     if (nextStateVal == undefined) {
-    //         console.warn(`Action -> ${actionType} does not seem to be configured for the state -> ${_currentState.value}`);
-    //     }
-    //     else {
-    //         cleanupEffects();
-    //         clearTimeout(timerId)
-    //         const nextState = states[nextStateVal];
-    //         const eventsCollection = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
-    //         eventsCollection.forEach(event => _executeActions(event, actionType));
-    //         if (!isSetByDefault) {
-    //             const eventsCollection = stateEventsMap.get('##exit##')?.stateEventCollection ?? [];
-    //             eventsCollection.forEach(event => _executeActions(event, '##exit##'));
-    //             _updateState(nextState as State<U, V>);
-    //         }
-    //     }
-    // }
-
-    // function subscribe(cb: TSubscribeCb<U, V>) {
-    //     callbacksArr = [...callbacksArr, cb]
-    // }
-
-    // function start() {
-    //     _isStarted = true;
-    //     _updateState(_currentState)
-    // }
     const { states, context: initialContext } = config;
     let _context = initialContext;
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
@@ -132,7 +38,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     let isStarted = false;
     let _internalState: TInternalState = 'dead';
     let _timerId = -1;
-    let callbacksArr: TSubscribeCb<U, V>[] = [];
+    let callbacksArr: {
+        type: TSubscriberType,
+        cb: TSubscribeCb<U, V>
+    }[] = [];
 
     function _setIsStarted(value: boolean) {
         isStarted = value;
@@ -145,14 +54,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     function _setContext(newContext: U) {
         _context = { ...newContext };
         currentState.context = _context;
-        _runSubscriberCallback()
+        _runSubscriberCallbacks('contextChange')
     }
 
     function _setCurrentState(newState: State<U, V>) {
         currentState.history = _currentState.value;
         _currentState = newState;
         currentState.value = newState.value;
-        _runSubscriberCallback()
+        _runSubscriberCallbacks('stateChange')
     }
 
     function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
@@ -270,9 +179,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return;
     }
 
-    function _runSubscriberCallback() {
-        callbacksArr.forEach(cb => {
-            cb(currentState)
+    function _runSubscriberCallbacks(type: TSubscriberType) {
+        callbacksArr.forEach(callback => {
+            if (callback.type === 'allChanges') {
+                callback.cb(currentState)
+            }
+            else if (callback.type === type) {
+                callback.cb(currentState)
+            }
         })
     }
 
@@ -300,8 +214,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         }
         _next(_currentState, actionType)
     }
-    function subscribe(cb: TSubscribeCb<U, V>) {
-        callbacksArr = [...callbacksArr, cb]
+    function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
+        callbacksArr = [...callbacksArr, { type, cb }]
     }
     function start() {
         _next(_currentState)

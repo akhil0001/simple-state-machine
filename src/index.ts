@@ -59,7 +59,7 @@ function init() {
 
     // init Machine
     const { start, subscribe, send } = createMachine(timerMachineConfig);
-    subscribe((state) => {
+    subscribe('allChanges', (state) => {
         const { currentTime } = state.context;
         if (displayTimeEl) {
             displayTimeEl.innerText = '' + currentTime;
@@ -75,10 +75,8 @@ function init() {
             stopBtn?.removeAttribute('disabled')
         }
     });
-    subscribe((state) => {
-        if (state.value !== state.history) {
-            console.log(state.history, '>', state.value)
-        }
+    subscribe('stateChange', (state) => {
+        console.log(state.history, '>', state.value)
     })
     start()
 
