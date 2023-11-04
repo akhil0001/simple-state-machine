@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { StateEvent } from "./StateEvent";
-import { TCallback, TSendBack } from "./types";
+import { IDefaultEvent, TCallback, TSendBack } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -25,11 +25,11 @@ const returnTrue = () => true;
 
 // TODO: Refactor the repeated logic to move to separate internal functions
 // TODO: Have a similar func like assign of xstate
-export class State<IContext, AllStates extends readonly string[]> {
+export class State<IContext, AllStates extends readonly string[], IEvents extends IDefaultEvent> {
     value: string = '';
-    #stateEvent: StateEvent<IContext> = new StateEvent<IContext>();
+    #stateEvent: StateEvent<IContext, IEvents> = new StateEvent<IContext, IEvents>();
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
-    protected stateEventsMap: Map<TActionType, StateEvent<IContext>> = new Map();
+    protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
     protected callback: TCallback<IContext> = () => () => { };
     #chainedActionType: TActionType = '';
     protected delay: number = 0;
@@ -46,7 +46,7 @@ export class State<IContext, AllStates extends readonly string[]> {
         }
     }
     #initStateEvent() {
-        const stateEvent = new StateEvent<IContext>();
+        const stateEvent = new StateEvent<IContext, IEvents>();
         this.#stateEvent = stateEvent;
     }
 
@@ -66,7 +66,7 @@ export class State<IContext, AllStates extends readonly string[]> {
         const returnActions = this.#returnStateEventActions()
         return { ...returnActions }
     }
-    on(actionType: string) {
+    on(actionType: IEvents['type']) {
         this.#initStateEvent()
         this.stateJSON[actionType] = {
             target: this.value,

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
-import { TDefaultContext, TDefaultStates, TStateEvent } from "./types";
+import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 type TCurrentState<U, V extends TDefaultStates> = {
     value: V[number];
@@ -11,9 +11,9 @@ type TCurrentState<U, V extends TDefaultStates> = {
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
-type TCreateMachineReturn<U, V extends TDefaultStates> = {
+type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> = {
     state: TCurrentState<U, V>;
-    send: (actionType: string) => void;
+    send: (event: W['type'] | W) => void;
     subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
     start: () => void
 }
@@ -24,7 +24,7 @@ type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
-export function createMachine<U extends TDefaultContext, V extends TDefaultStates>(config: MachineConfig<U, V>): TCreateMachineReturn<U, V> {
+export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
     let _context = initialContext;
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
@@ -57,27 +57,27 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _runSubscriberCallbacks('contextChange')
     }
 
-    function _setCurrentState(newState: State<U, V>) {
+    function _setCurrentState(newState: State<U, V, W>) {
         currentState.history = _currentState.value;
         _currentState = newState;
         currentState.value = newState.value;
         _runSubscriberCallbacks('stateChange')
     }
 
-    function _runEffects(effects: TStateEvent<U>[], actionType: string | symbol) {
+    function _runEffects(effects: TStateEvent<U, W>[], actionType: string | symbol, data: Record<string, any> = {}) {
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
-                const newContext = callback(_context, { type: actionType })
+                const newContext = callback(_context, { type: actionType, data } as W)
                 _setContext(newContext)
             }
             if (type === 'fireAndForget') {
-                callback(_context, { type: actionType })
+                callback(_context, { type: actionType, data } as W)
             }
         })
     }
 
-    function _runEntry(state: State<U, V>) {
+    function _runEntry(state: State<U, V, W>) {
         _internalState = 'entered'
         _setCurrentState(state)
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
@@ -98,7 +98,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return _runAlways(state);
     }
 
-    function _runAlways(state: State<U, V>) {
+    function _runAlways(state: State<U, V, W>) {
         _internalState = 'living';
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const alwaysJSONArr = Reflect.ownKeys(stateJSON)
@@ -126,7 +126,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return _runAfter(state)
     }
 
-    function _runAfter(state: State<U, V>) {
+    function _runAfter(state: State<U, V, W>) {
         _internalState = 'living'
         const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
         const afterJSON = stateJSON['##after##'];
@@ -146,7 +146,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         }
     }
 
-    function _runLive(state: State<U, V>, actionType: string) {
+    function _runLive(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
         _internalState = 'living'
         const { stateEventsMap, stateJSON } = _getStateConfig(state);
         const eventJSON = stateJSON[actionType];
@@ -156,7 +156,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { target, cond, isSetByDefault } = eventJSON;
         if (cond(_context)) {
             const effects = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
-            _runEffects(effects, actionType)
+            _runEffects(effects, actionType, data)
             const nextState = states[target]
             if (!isSetByDefault) {
                 return _runExit(state, nextState)
@@ -164,7 +164,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         }
     }
 
-    function _runExit(state: State<U, V>, nextState: State<U, V>) {
+    function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
         _internalState = 'exited';
         clearTimeout(_timerId)
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
@@ -190,7 +190,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         })
     }
 
-    function _next(nextState: State<U, V>, actionType: string = '') {
+    function _next(nextState: State<U, V, W>, actionType: string | symbol = '', data: Record<string, any> = {}) {
         if (_internalState === 'dead') {
             _setIsStarted(true)
             _runEntry(nextState)
@@ -199,20 +199,23 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             _runEntry(nextState)
         }
         else if (_internalState === 'living') {
-            _runLive(nextState, actionType)
+            _runLive(nextState, actionType, data)
         }
     }
 
-    function _getStateConfig(state: State<U, V>) {
+    function _getStateConfig(state: State<U, V, W>) {
         return state.getConfig()
     }
 
-    function send(actionType: string) {
+    function send(action: W['type'] | W) {
         if (!_getIsStarted()) {
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        _next(_currentState, actionType)
+        if (typeof action === "object")
+            _next(_currentState, action.type, action.data)
+        else
+            _next(_currentState, action)
     }
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
         callbacksArr = [...callbacksArr, { type, cb }]
