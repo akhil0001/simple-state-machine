@@ -1,7 +1,7 @@
 import { State } from "./State";
 import { IDefaultEvent, TDefaultContext, TDefaultStates } from "./types";
 
-type TStates<T extends readonly string[], IContext, IEvents> = {
+type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
     [TIndex in T[number]]: State<IContext, T, IEvents>
 } | Record<string, State<IContext, T, IEvents>>
 
