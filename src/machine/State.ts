@@ -35,15 +35,8 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
 
     constructor(val: string) {
         this.value = val;
-        this.#setInitialAfter()
     }
-    #setInitialAfter() {
-        this.stateJSON['after'] = {
-            target: this.value,
-            cond: returnTrue,
-            isSetByDefault: true
-        }
-    }
+
     #initStateEvent() {
         const stateEvent = new StateEvent<IContext, IEvents>();
         this.#stateEvent = stateEvent;
