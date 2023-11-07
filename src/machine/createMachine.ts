@@ -13,12 +13,14 @@ type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) =>
 
 export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
 
+export type THandle<V extends TDefaultStates> = V[number]
+
 export type TInspectReturnType<V extends TDefaultStates> = {
     nodes: {
         id: V[number];
         data: {
             label: V[number];
-            handles: (string | undefined)[];
+            handles: THandle<V>[];
         };
     }[]
     edges: {
@@ -26,7 +28,6 @@ export type TInspectReturnType<V extends TDefaultStates> = {
         source: V[number];
         target: V[number];
         sourceHandle: V[number];
-        // targetHandle: string;
         id: string;
     }[]
 }
@@ -43,7 +44,6 @@ type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
-// TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
