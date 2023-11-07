@@ -8,7 +8,7 @@ const HANDLE_POS_ARR = [Position.Left, Position.Bottom, Position.Right, Position
 interface ICustomNodeProps<V extends TDefaultStates> {
     data: {
         label: string;
-        handles: THandle<V>[]
+        handles: THandle<V>
     }
 }
 
@@ -24,14 +24,14 @@ export const CustomNode = memo(({ data }: ICustomNodeProps<TDefaultStates>) => {
                 }}
             >
                 <div>{data.label}</div>
-                {data.handles.map((handle: string, index: number) => {
+                {data.handles.source.map((handle: string, index: number) => {
                     return (
-                        <Handle type="source" id={handle} key={handle} isConnectable={false} position={HANDLE_POS_ARR[index % 4]} />
+                        <Handle type="source" id={handle} key={handle} isConnectable={false} position={HANDLE_POS_ARR[index % 4]} style={{ background: 'red' }} />
                     )
                 })}
-                {data.handles.map((handle: string, index: number) => {
+                {data.handles.target.map((handle: string, index: number) => {
                     return (
-                        <Handle type="target" id={handle} key={handle} isConnectable={false} position={HANDLE_POS_ARR[index % 4]} />
+                        <Handle type="target" id={handle} key={handle} isConnectable={false} position={HANDLE_POS_ARR[data.handles.target.length + 1 + index % 4]} />
                     )
                 })}
             </div>

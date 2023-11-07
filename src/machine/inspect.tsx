@@ -10,7 +10,7 @@ interface InspectProps {
     subscribe: TSubscribe<TDefaultContext, TDefaultStates>
 }
 const edgeTypes = {
-    custom: CustomEdge
+    custom: CustomEdge,
 };
 
 const nodeTypes = {
@@ -23,7 +23,7 @@ export const Inspect = ({ inspect, subscribe }: InspectProps) => {
             ...node,
             type: 'custom',
             position: {
-                x: 0 + 100 * index,
+                x: 50 + 100 * index,
                 y: 50 + 100 * index
             }
         }))
@@ -32,7 +32,6 @@ export const Inspect = ({ inspect, subscribe }: InspectProps) => {
         const res = edgesFromInspect.map((edge) => {
             return {
                 ...edge,
-                type: 'custom',
                 markerEnd: {
                     type: MarkerType.ArrowClosed,
                 }
