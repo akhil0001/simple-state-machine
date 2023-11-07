@@ -11,11 +11,32 @@ type TCurrentState<U, V extends TDefaultStates> = {
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
+export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
+
+export type TInspectReturnType<V extends TDefaultStates> = {
+    nodes: {
+        id: V[number];
+        data: {
+            label: V[number];
+            handles: (string | undefined)[];
+        };
+    }[]
+    edges: {
+        type: V[number];
+        source: V[number];
+        target: V[number];
+        sourceHandle: V[number];
+        // targetHandle: string;
+        id: string;
+    }[]
+}
+
 type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> = {
     state: TCurrentState<U, V>;
     send: (event: W['type'] | W) => void;
-    subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
-    start: () => void
+    subscribe: TSubscribe<U, V>
+    start: () => void;
+    inspect: () => TInspectReturnType<V>
 }
 
 type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
@@ -246,5 +267,49 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _next(_currentState)
     }
 
-    return { state: currentState, send, subscribe, start };
+    function inspect() {
+        const nodes = Object.keys(states)
+            .map((stateVal: V[number]) => {
+                const state = states[stateVal];
+                const { stateJSON } = _getStateConfig(state)
+                const handles = Reflect.ownKeys(stateJSON)
+                    .map(el => {
+                        const key = typeof el === 'symbol' ? el.description ?? '' : el;
+                        const target = stateJSON[el].target;
+                        return key + target;
+                    })
+                return {
+                    id: stateVal,
+                    data: {
+                        label: stateVal,
+                        handles: handles,
+                    }
+                }
+            });
+        const edges = Object.keys(states)
+            .map((stateVal: V[number]) => {
+                const state = states[stateVal];
+                const { stateJSON } = _getStateConfig(state)
+                const result = Reflect.ownKeys(stateJSON)
+                    .map((el: string | symbol) => {
+                        const key = typeof el === 'symbol' ? el.description ?? '' : el;
+                        const source = stateVal;
+                        const target = stateJSON[el].target
+                        return {
+                            type: stateVal,
+                            source: source,
+                            target: target,
+                            sourceHandle: key + target,
+                            label: key,
+                            id: `e-${key}-${source}-${target}`
+                        }
+                    })
+
+                return result
+            })
+            .flat();
+        return { nodes, edges };
+    }
+
+    return { state: currentState, send, subscribe, start, inspect };
 }
