@@ -32,7 +32,7 @@ const setTime = (context: ITimerContext, event: ITimerEvents) => ({ ...context, 
 const isTimeZero = (context: ITimerContext) => context.currentTime === 0;
 
 // machine config
-const timerMachineConfig = new MachineConfig<ITimerContext, TStates, ITimerEvents>({
+export const timerMachineConfig = new MachineConfig<ITimerContext, TStates, ITimerEvents>({
     currentTime: 5,
     limit: 0,
     timerInputEl: null
@@ -93,6 +93,7 @@ decideWhereToGo.always()
     .moveTo('running')
 
 // UI Logic
+export const { start, subscribe, send, inspect } = createMachine(timerMachineConfig);
 
 function init() {
     const startBtn = document.getElementById('start');
@@ -102,7 +103,7 @@ function init() {
     const timerInput = document.getElementById('timerInput');
 
     // init Machine
-    const { start, subscribe, send } = createMachine(timerMachineConfig);
+
 
 
     subscribe('allChanges', (state) => {
