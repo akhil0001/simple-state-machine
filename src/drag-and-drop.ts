@@ -18,7 +18,7 @@ interface IEvents {
 
 const states: TStates = ['idle', 'dragging']
 
-const dragAroundMachineConfig = new MachineConfig<IDragAroundContext, TStates, IEvents>({
+export const dragAroundMachineConfig = new MachineConfig<IDragAroundContext, TStates, IEvents>({
     x: 0,
     y: 0
 })
@@ -73,4 +73,4 @@ function init() {
         }
     })
 }
-window.addEventListener('load', init)
+// window.addEventListener('load', init)
