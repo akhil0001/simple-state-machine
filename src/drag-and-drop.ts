@@ -38,10 +38,10 @@ dragging.on('mouseUp')
     .moveTo('idle')
 
 
+export const { start, send, subscribe, inspect } = createMachine(dragAroundMachineConfig);
 function init() {
     const draggableEl = document.getElementById('draggable');
     const tooltipEl = document.getElementById('positionTooltip')
-    const { start, send, subscribe } = createMachine(dragAroundMachineConfig);
 
     draggableEl?.addEventListener('mousedown', () => send('mouseDown'))
     window?.addEventListener('mousemove', (e) => {

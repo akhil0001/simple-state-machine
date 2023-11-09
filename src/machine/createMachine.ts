@@ -11,18 +11,46 @@ type TCurrentState<U, V extends TDefaultStates> = {
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
+export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
+
+export type THandle<V extends TDefaultStates> = {
+    source: V[number][];
+    target: V[number][];
+}
+
+type TEdge<V extends TDefaultStates> = {
+    type: 'custom' | 'selfConnecting';
+    source: V[number];
+    target: V[number];
+    sourceHandle: V[number];
+    id: string;
+    label: string;
+    animated: boolean;
+}
+
+export type TInspectReturnType<V extends TDefaultStates> = {
+    nodes: {
+        id: V[number];
+        data: {
+            label: V[number];
+            handles: THandle<V>;
+        };
+    }[]
+    edges: TEdge<V>[]
+}
+
 type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> = {
     state: TCurrentState<U, V>;
     send: (event: W['type'] | W) => void;
-    subscribe: (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
-    start: () => void
+    subscribe: TSubscribe<U, V>
+    start: () => void;
+    inspect: () => TInspectReturnType<V>
 }
 
 type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
-// TODO: May be create a ExecutableState Class that takes instance of class and runs enter, exit and interim states inside it
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
@@ -246,5 +274,71 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _next(_currentState)
     }
 
-    return { state: currentState, send, subscribe, start };
+    function inspect() {
+        const stateHandles: Record<string, {
+            source: string[];
+            target: string[]
+        }> = {}
+        for (const state in states) {
+            const _state: V[number] = state;
+            const { stateJSON } = _getStateConfig(states[_state]);
+            stateHandles[_state] = {
+                source: [],
+                target: stateHandles[_state]?.target ?? []
+            }
+            Reflect.ownKeys(stateJSON)
+                .forEach(el => {
+                    const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
+                    const target = stateJSON[el].target;
+                    const stateHandle = stateHandles[target];
+                    stateHandles[_state].source.push(actionName + _state + target)
+                    if (stateHandle?.target) {
+                        stateHandle.target.push(actionName + target + _state)
+                    }
+                    else {
+                        stateHandles[target] = {
+                            source: [],
+                            target: [actionName + target + _state]
+                        }
+                    }
+                })
+        }
+        const nodes = Object.keys(states)
+            .map((stateVal: V[number]) => {
+                return {
+                    id: stateVal,
+                    data: {
+                        label: stateVal,
+                        handles: stateHandles[stateVal]
+                    }
+                }
+            });
+        console.log(nodes)
+        const edges = Object.keys(states)
+            .map((stateVal: V[number]) => {
+                const state = states[stateVal];
+                const { stateJSON } = _getStateConfig(state)
+                const result = Reflect.ownKeys(stateJSON)
+                    .map((el: string | symbol) => {
+                        const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
+                        const source = stateVal;
+                        const target = stateJSON[el].target
+                        const res: TEdge<V> = {
+                            type: source === target ? 'custom' : 'custom',
+                            source: source,
+                            target: target,
+                            sourceHandle: actionName + source + target,
+                            label: actionName,
+                            id: `e-${actionName}-${source}-${target}`,
+                            animated: true
+                        }
+                        return res;
+                    })
+                return result
+            })
+            .flat();
+        return { nodes, edges };
+    }
+
+    return { state: currentState, send, subscribe, start, inspect };
 }
