@@ -3,7 +3,7 @@ import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
 import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
-type TCurrentState<U, V extends TDefaultStates> = {
+export type TCurrentState<U, V extends TDefaultStates> = {
     value: V[number];
     history: V[number];
     context: U
