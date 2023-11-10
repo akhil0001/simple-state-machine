@@ -140,4 +140,4 @@ function init() {
     stopBtn?.addEventListener('click', () => send('stop'))
 }
 
-window.addEventListener('load', init);
+// window.addEventListener('load', init);
