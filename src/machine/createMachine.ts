@@ -52,9 +52,9 @@ type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 
-export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>): TCreateMachineReturn<U, V, W> {
+export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: U = {} as U): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
-    let _context = initialContext;
+    let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
     const currentState = {
