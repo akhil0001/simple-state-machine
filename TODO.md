@@ -8,3 +8,4 @@
 
 - [ ] refactor -  Remove machine code from index.ts file
 - [ ] hook - Figure a way to pass subscription type to `useMachine`
+- [ ] Start writing test cases for machines
