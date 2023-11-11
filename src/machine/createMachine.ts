@@ -314,7 +314,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                     }
                 }
             });
-        console.log(nodes)
+
         const edges = Object.keys(states)
             .map((stateVal: V[number]) => {
                 const state = states[stateVal];
