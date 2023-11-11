@@ -52,6 +52,7 @@ type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 
+
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
     let _context = { ...initialContext, ...context };
@@ -65,10 +66,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     let isStarted = false;
     let _internalState: TInternalState = 'dead';
-    let callbacksArr: {
+    const callbacksArr: Set<{
         type: TSubscriberType,
         cb: TSubscribeCb<U, V>
-    }[] = [];
+    }> = new Set();
 
     let _cleanUpEffectsQueue: Array<() => any> = [];
 
@@ -268,7 +269,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             _next(_currentState, action)
     }
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
-        callbacksArr = [...callbacksArr, { type, cb }]
+        callbacksArr.add({ type, cb })
     }
     function start() {
         _next(_currentState)
