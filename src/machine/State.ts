@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TCallback, TSendBack } from "./types";
+import { IDefaultEvent, TAsyncCallback, TCallback, TSendBack } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -30,6 +30,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
     protected callback: TCallback<IContext, IEvents> = () => () => { };
+    protected asyncCallback: TAsyncCallback<IContext> = () => new Promise(res => res(null));
     #chainedActionType: TActionType = '';
     protected delay: number = 0;
 
@@ -58,6 +59,37 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const returnActions = this.#returnStateEventActions()
         return { ...returnActions }
     }
+
+    #onDone() {
+        this.#initStateEvent();
+        const actionType = Symbol('##onDone##');
+        this.#chainedActionType = actionType;
+        this.stateJSON[actionType] = {
+            target: this.value,
+            isSetByDefault: true,
+            cond: returnTrue
+        }
+        this.stateEventsMap.set(actionType, this.#stateEvent);
+        const boundMoveTo = this.#moveTo.bind(this);
+        const returnActions = this.#returnStateEventActions();
+        return { ...returnActions, moveTo: boundMoveTo }
+    }
+
+    #onError() {
+        this.#initStateEvent();
+        const actionType = Symbol('##onError##');
+        this.#chainedActionType = actionType;
+        this.stateJSON[actionType] = {
+            target: this.value,
+            isSetByDefault: true,
+            cond: returnTrue
+        }
+        this.stateEventsMap.set(actionType, this.#stateEvent);
+        const boundMoveTo = this.#moveTo.bind(this);
+        const returnActions = this.#returnStateEventActions();
+        return { ...returnActions, moveTo: boundMoveTo }
+    }
+
     on(actionType: IEvents['type']) {
         this.#initStateEvent()
         this.stateJSON[actionType] = {
@@ -141,5 +173,11 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         this.callback = callback;
         const boundOn = this.on.bind(this);
         return { on: boundOn }
+    }
+    async invokeAsyncCallback(callback: TAsyncCallback<IContext>) {
+        this.asyncCallback = callback;
+        const boundOnDone = this.#onDone.bind(this)
+        const boundOnError = this.#onError.bind(this);
+        return { boundOnDone, boundOnError }
     }
 }
