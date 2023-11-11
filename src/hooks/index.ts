@@ -23,7 +23,10 @@ export function useMachine<U extends TDefaultContext, V extends TDefaultStates, 
     }, [start])
 
     useEffect(() => {
-        subscribe('allChanges', subscribeToAllChangesCb)
+        const unsubscribe = subscribe('allChanges', subscribeToAllChangesCb);
+        return () => {
+            unsubscribe()
+        }
     }, [subscribe, subscribeToAllChangesCb])
 
     return { state, send };
