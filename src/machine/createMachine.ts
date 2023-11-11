@@ -11,7 +11,7 @@ export type TCurrentState<U, V extends TDefaultStates> = {
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
-export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
+export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
 
 export type THandle<V extends TDefaultStates> = {
     source: V[number][];
@@ -268,9 +268,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         else
             _next(_currentState, action)
     }
+
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
-        callbacksArr.add({ type, cb })
+        callbacksArr.add({ type, cb });
+        return function unsubscribe() {
+            callbacksArr.delete({ type, cb })
+        }
     }
+
     function start() {
         _next(_currentState)
     }
