@@ -47,7 +47,11 @@ type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> 
     inspect: () => TInspectReturnType<V>
 }
 
-type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
+type TInternalStateEnum = 'entered' | 'living' | 'exited' | 'dead';
+type TInternalState<V extends TDefaultStates> = {
+    value: TInternalStateEnum,
+    stateValue: V[number]
+}
 
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
@@ -58,6 +62,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
+    const _debug = false;
     const currentState = {
         value: _currentState.value,
         history: _currentState.value,
@@ -65,7 +70,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     let isStarted = false;
-    let _internalState: TInternalState = 'dead';
+    const _internalState: TInternalState<V> = {
+        value: 'dead',
+        stateValue: currentState.value
+    };
     const callbacksArr: Set<{
         type: TSubscriberType,
         cb: TSubscribeCb<U, V>
@@ -116,8 +124,17 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _cleanUpEffectsQueue = []
     }
 
+    function _debugLogs(...msgs: any[]) {
+        if (!_debug) {
+            return;
+        }
+        console.log(...msgs);
+    }
+
     function _runEntry(state: State<U, V, W>) {
-        _internalState = 'entered'
+        _debugLogs('entry::', state.value)
+        _internalState.value = 'entered'
+        _internalState.stateValue = state.value
         _setCurrentState(state)
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const enteredJSON = stateJSON['##enter##'];
@@ -138,7 +155,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runAlways(state: State<U, V, W>) {
-        _internalState = 'living';
+        _debugLogs('always::', state.value)
+
+        _internalState.value = 'living';
+        _internalState.stateValue = state.value
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const alwaysJSONArr = Reflect.ownKeys(stateJSON)
             .filter(val => {
@@ -166,19 +186,42 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runService(state: State<U, V, W>) {
-        _internalState = 'living';
+        _internalState.value = 'living';
+        _internalState.stateValue = state.value
+
         const { callback: service } = _getStateConfig(state);
         const cleanUpEffects = service(_context, send);
         _cleanUpEffectsQueue.push(cleanUpEffects);
         _runAfter(state)
     }
 
+    function _runAsyncService(state: State<U, V, W>) {
+        _debugLogs('async::', state.value)
+        _internalState.value = 'living';
+        _internalState.stateValue = state.value;
+
+        const { asyncCallback: asyncService, stateJSON } = _getStateConfig(state);
+        const onDoneActionEvent = Reflect.ownKeys(stateJSON)
+            .find(el => typeof el === 'symbol' && el.description === '##onDone##')
+        const onErrorActionEvent = Reflect.ownKeys(stateJSON)
+            .find(el => typeof el === 'symbol' && el.description === '##onError##')
+        return asyncService(_context)
+            .catch(() => {
+                _next(state, onErrorActionEvent)
+            })
+            .then((data: any) => {
+                _debugLogs('asyncServiceRun::', state.value, 'internalStateVal::', _internalState.stateValue)
+                _next(state, onDoneActionEvent, data)
+            })
+    }
+
     function _runAfter(state: State<U, V, W>) {
-        _internalState = 'living'
+        _debugLogs('after::', state.value)
+        _internalState.value = 'living'
         const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
         const afterJSON = stateJSON['##after##'];
         if (!afterJSON || !delay) {
-            return;
+            return _runAsyncService(state)
         }
         const { target, cond, isSetByDefault } = afterJSON;
         if (cond(_context)) {
@@ -193,12 +236,18 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             const cleanUpEffect = () => clearTimeout(_timerId)
             _cleanUpEffectsQueue.push(cleanUpEffect)
         }
+        return _runAsyncService(state)
     }
 
 
-
-    function _runLive(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
-        _internalState = 'living'
+    function _runActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
+        _internalState.value = 'living'
+        _debugLogs('active listener::', state.value, 'act::', actionType)
+        const flag = _validate(state);
+        if (!flag) {
+            _debugLogs('::invalidated::')
+            return;
+        }
         const { stateEventsMap, stateJSON } = _getStateConfig(state);
         const eventJSON = stateJSON[actionType];
         if (!eventJSON) {
@@ -216,7 +265,9 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
-        _internalState = 'exited';
+        _internalState.value = 'exited';
+        _debugLogs('exit::', state.value)
+        _debugLogs('::------::')
         _runCleanupEffects()
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const exitedJSON = stateJSON['##exit##'];
@@ -241,16 +292,21 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         })
     }
 
-    function _next(nextState: State<U, V, W>, actionType: string | symbol = '', data: Record<string, any> = {}) {
-        if (_internalState === 'dead') {
+    function _validate(state: State<U, V, W>) {
+        return (state.value === currentState.value)
+    }
+
+    function _next(nextState: State<U, V, W>, actionType: string | symbol = '', actionData: Record<string, any> = {}) {
+        _debugLogs('next::', nextState.value, "act::", actionType)
+        if (_internalState.value === 'dead') {
             _setIsStarted(true)
-            _runEntry(nextState)
+            return _runEntry(nextState)
         }
-        else if (_internalState === 'exited') {
-            _runEntry(nextState)
+        else if (_internalState.value === 'exited') {
+            return _runEntry(nextState)
         }
-        else if (_internalState === 'living') {
-            _runLive(nextState, actionType, data)
+        else if (_internalState.value === 'living') {
+            return _runActiveListener(nextState, actionType, actionData)
         }
     }
 
@@ -345,6 +401,5 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             .flat();
         return { nodes, edges };
     }
-
     return { state: currentState, send, subscribe, start, inspect };
 }

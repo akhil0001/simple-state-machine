@@ -28,3 +28,5 @@ export type TStateEvent<IContext, IEvents> = {
 export type TSendBack<IEvents extends IDefaultEvent> = (action: IEvents['type'] | IEvents) => void
 
 export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: IContext, sendBack: TSendBack<IEvents>) => () => void;
+
+export type TAsyncCallback<IContext> = (context: IContext) => Promise<any>
