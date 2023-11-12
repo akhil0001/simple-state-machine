@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TAsyncCallback, TCallback, TSendBack } from "./types";
+import { IDefaultEvent, TAfterCallback, TAsyncCallback, TCallback, TSendBack } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -32,7 +32,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
     protected callback: TCallback<IContext, IEvents> = () => () => { };
     protected asyncCallback: TAsyncCallback<IContext> = () => new Promise(res => res(null));
     #chainedActionType: TActionType = '';
-    protected delay: number = 0;
+    protected delay: number | TAfterCallback<IContext> = 0;
 
     constructor(val: string) {
         this.value = val;
@@ -145,7 +145,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const returnActions = this.#returnStateEventActions();
         return { ...returnActions }
     }
-    after(time: number) {
+    after(time: number | TAfterCallback<IContext>) {
         this.delay = time;
         this.#chainedActionType = '##after##';
         this.stateJSON[this.#chainedActionType] = {
