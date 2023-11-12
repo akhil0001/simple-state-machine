@@ -161,12 +161,13 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
     }
     getConfig() {
-        const { stateEventsMap, stateJSON, callback, delay } = this;
+        const { stateEventsMap, stateJSON, callback, delay, asyncCallback } = this;
         return {
             callback,
             stateJSON,
             stateEventsMap,
-            delay
+            delay,
+            asyncCallback
         }
     }
     invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void) {
@@ -174,10 +175,10 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const boundOn = this.on.bind(this);
         return { on: boundOn }
     }
-    async invokeAsyncCallback(callback: TAsyncCallback<IContext>) {
+    invokeAsyncCallback(callback: TAsyncCallback<IContext>) {
         this.asyncCallback = callback;
         const boundOnDone = this.#onDone.bind(this)
         const boundOnError = this.#onError.bind(this);
-        return { boundOnDone, boundOnError }
+        return { onDone: boundOnDone, onError: boundOnError }
     }
 }
