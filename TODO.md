@@ -16,3 +16,4 @@
 - [ ] core - Pass context support to `after` method
 - [ ] createMachine - handle function as an argument to `after` method
 - [ ] example - build dino game using state machine
+- [ ] core - what if there is a way to restrict the events on machine level with `exceptWhenIn`
