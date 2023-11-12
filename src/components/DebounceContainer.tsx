@@ -3,7 +3,8 @@ import { debouncingMachine } from "../machine/debounceMachine"
 
 export const DebounceContainer = () => {
     const { state, send } = useMachine(debouncingMachine, {
-        url: 'https://jsonplaceholder.typicode.com/todos/'
+        url: 'https://jsonplaceholder.typicode.com/todos/',
+        delay: 1000
     })
 
     return (
