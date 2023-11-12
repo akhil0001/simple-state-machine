@@ -58,7 +58,6 @@ ready.invokeCallback((context, sendBack) => {
     }
     timerInputEl?.addEventListener('input', inputEvtListener)
     return () => {
-        console.log('removed event listener')
         timerInputEl?.removeEventListener('input', inputEvtListener)
     }
 })
@@ -73,9 +72,18 @@ ready.on('start')
 ready.on('timeChange')
     .updateContext(setTime)
 
-running.after(1000)
+// running.after(1000)
+//     .moveTo('decideWhereToGo')
+//     .updateContext(decrementTime)
+
+const timerPromise = () => new Promise(res => (setTimeout(() => res(1000), 1000)))
+running.invokeAsyncCallback(timerPromise)
+    .onDone()
     .moveTo('decideWhereToGo')
     .updateContext(decrementTime)
+
+running.onExit()
+    .fireAndForget(() => console.log('exited'))
 
 running.on('stop')
     .moveTo('ready')
