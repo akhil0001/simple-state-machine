@@ -11,7 +11,7 @@ export type TCurrentState<U, V extends TDefaultStates> = {
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
-export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => void;
+export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
 
 export type THandle<V extends TDefaultStates> = {
     source: V[number][];
@@ -52,6 +52,7 @@ type TInternalState = 'entered' | 'living' | 'exited' | 'dead'
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 
+
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = config;
     let _context = { ...initialContext, ...context };
@@ -65,10 +66,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     let isStarted = false;
     let _internalState: TInternalState = 'dead';
-    let callbacksArr: {
+    const callbacksArr: Set<{
         type: TSubscriberType,
         cb: TSubscribeCb<U, V>
-    }[] = [];
+    }> = new Set();
 
     let _cleanUpEffectsQueue: Array<() => any> = [];
 
@@ -267,9 +268,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         else
             _next(_currentState, action)
     }
+
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
-        callbacksArr = [...callbacksArr, { type, cb }]
+        callbacksArr.add({ type, cb });
+        return function unsubscribe() {
+            callbacksArr.delete({ type, cb })
+        }
     }
+
     function start() {
         _next(_currentState)
     }
@@ -313,7 +319,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                     }
                 }
             });
-        console.log(nodes)
+
         const edges = Object.keys(states)
             .map((stateVal: V[number]) => {
                 const state = states[stateVal];

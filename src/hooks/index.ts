@@ -6,6 +6,7 @@ import { IDefaultEvent, TDefaultContext, TDefaultStates } from "../machine/types
 export function useMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<U> = {} as U) {
     const { state: initialState, send, subscribe, start } = useMemo(() => {
         return createMachine(machineConfig, context);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [machineConfig])
     const [state, setState] = useState(initialState);
 
@@ -23,7 +24,10 @@ export function useMachine<U extends TDefaultContext, V extends TDefaultStates, 
     }, [start])
 
     useEffect(() => {
-        subscribe('allChanges', subscribeToAllChangesCb)
+        const unsubscribe = subscribe('allChanges', subscribeToAllChangesCb);
+        return () => {
+            unsubscribe()
+        }
     }, [subscribe, subscribeToAllChangesCb])
 
     return { state, send };
