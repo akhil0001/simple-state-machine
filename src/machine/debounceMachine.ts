@@ -11,7 +11,8 @@ interface IAPIResponse {
 interface IContext {
     url: string;
     data: IAPIResponse | null,
-    todoValue: string
+    todoValue: string;
+    delay: number
 }
 
 type TEvents = {
@@ -27,6 +28,7 @@ export const debouncingMachine = new MachineConfig<IContext, TStates, TEvents>({
     url: '',
     data: null,
     todoValue: "1",
+    delay: 1000
 })
 
 const fetchingUrl: TAsyncCallback<IContext> = (context) => {
@@ -45,7 +47,7 @@ idle.on('updateTodoValue')
     .moveTo('debouncing')
     .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
-debouncing.after(5000)
+debouncing.after(context => context.delay)
     .moveTo('fetching')
 
 debouncing.on('updateTodoValue')

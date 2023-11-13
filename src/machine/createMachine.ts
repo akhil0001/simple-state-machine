@@ -226,13 +226,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { target, cond, isSetByDefault } = afterJSON;
         if (cond(_context)) {
             const effects = stateEventsMap.get('##after##')?.stateEventCollection ?? [];
+            const delayTime = typeof delay === 'function' ? delay(_context) : delay;
             const _timerId = setTimeout(() => {
                 _runEffects(effects, '##after##')
                 if (!isSetByDefault) {
                     const nextState = states[target]
                     _runExit(state, nextState)
                 }
-            }, delay);
+            }, delayTime);
             const cleanUpEffect = () => clearTimeout(_timerId)
             _cleanUpEffectsQueue.push(cleanUpEffect)
         }
