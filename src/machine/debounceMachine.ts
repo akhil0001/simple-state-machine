@@ -38,14 +38,14 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
         .then(data => ({ response: data }))
 }
 
-const { idle, debouncing, fetching, error } = debouncingMachine.addStates(['idle', 'debouncing', 'fetching', 'error'])
+const { idle, debouncing, fetching } = debouncingMachine.addStates(['idle', 'debouncing', 'fetching', 'error'])
+
+debouncingMachine.on('updateTodoValue')
+    .moveTo('debouncing')
+    .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
 idle.on('updateUrl')
     .updateContext((context, event) => ({ ...context, url: event.data?.url ?? context.url }))
-
-idle.on('updateTodoValue')
-    .moveTo('debouncing')
-    .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
@@ -65,17 +65,3 @@ fetching.invokeAsyncCallback(fetchingUrl)
 fetching.invokeAsyncCallback(fetchingUrl)
     .onError()
     .moveTo('error')
-
-fetching.on('updateTodoValue')
-    .moveTo('debouncing')
-    .updateContext((context, event) => ({
-        ...context,
-        todoValue: event.data?.todoValue ?? context.todoValue
-    }))
-
-error.on('updateTodoValue')
-    .moveTo('debouncing')
-    .updateContext((context, event) => ({
-        ...context,
-        todoValue: event.data?.todoValue ?? context.todoValue
-    }))
