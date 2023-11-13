@@ -58,7 +58,8 @@ type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
-    const { states, context: initialContext } = config;
+    // const { states, context: initialContext } = config;
+    const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = config.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
@@ -240,6 +241,33 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return _runAsyncService(state)
     }
 
+    function _runMasterActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
+        _internalState.value = 'living'
+        _debugLogs('master active listener::', state.value, 'act::', actionType)
+        const flag = _validate(state);
+        if (!flag) {
+            _debugLogs('::invalidated::')
+            return;
+        }
+        // const { stateEventsMap, stateJSON } = _getStateConfig(state);
+        const eventJSON = masterStateJSON[actionType];
+        if (!eventJSON) {
+            return _runActiveListener(state, actionType, data);
+        }
+        const { target, cond, isSetByDefault } = eventJSON;
+        if (cond(_context)) {
+            const effects = masterStateEventsMap.get(actionType)?.stateEventCollection ?? [];
+            _runEffects(effects, actionType, data)
+            if (target == null) {
+                return _runActiveListener(state, actionType, data)
+            }
+            const nextState = states[target]
+            if (!isSetByDefault) {
+                return _runExit(state, nextState)
+            }
+        }
+    }
+
 
     function _runActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
         _internalState.value = 'living'
@@ -307,7 +335,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             return _runEntry(nextState)
         }
         else if (_internalState.value === 'living') {
-            return _runActiveListener(nextState, actionType, actionData)
+            return _runMasterActiveListener(nextState, actionType, actionData)
         }
     }
 
