@@ -47,20 +47,18 @@ debouncingMachine.on('updateTodoValue')
 idle.on('updateUrl')
     .updateContext((context, event) => ({ ...context, url: event.data?.url ?? context.url }))
 
+idle.onEnter()
+    .fireAndForget(() => console.log('entered idle state'))
+
 debouncing.after(context => context.delay)
     .moveTo('fetching')
 
-debouncing.on('updateTodoValue')
-    .moveTo('debouncing')
-    .updateContext((context, event) => ({
-        ...context,
-        todoValue: event.data?.todoValue ?? context.todoValue
-    }))
 
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
     .updateContext((context, event) => ({ ...context, data: event.data?.response ?? null }))
+    .fireAndForget(console.log)
 
 fetching.invokeAsyncCallback(fetchingUrl)
     .onError()
