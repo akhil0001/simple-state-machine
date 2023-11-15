@@ -16,4 +16,7 @@
 - [ ] core - handle multiple `after`, `always` and `services`
 - [ ] createmachine - handle multiple `after`, `always` and `services`
 - [ ] example - build dino game using state machine
-- [ ] core - what if there is a way to restrict the events on machine level with `exceptWhenIn`
+- [ ] core - what if there is a way to restrict the events on machine level with **`exceptWhenIn`**
+- [x] issue - unchain the chainedActionType in the State class and Machine class
+- [ ] core - Move away from the usage of `protected` ES' actual `private` variables
+- [ ] createMachine - Have a similar func like assign of xstate
