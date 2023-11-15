@@ -20,3 +20,4 @@
 - [ ] core - what if there is a way to restrict the events on machine level with **`exceptWhenIn`**
 - [ ] core - Move away from the usage of `protected` ES' actual `private` variables
 - [ ] createMachine - Have a similar func like assign of xstate
+- [ ] experiment - lets try integrating mermaid with this
