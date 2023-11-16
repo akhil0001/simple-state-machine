@@ -21,3 +21,4 @@
 - [ ] core - Move away from the usage of `protected` ES' actual `private` variables
 - [ ] createMachine - Have a similar func like assign of xstate
 - [ ] experiment - lets try integrating mermaid with this
+- [ ] issue - The state value from `useMachine` does not seem to be updated properly with the actual value
