@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
-import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
+import { IDefaultEvent, TAfterCallback, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 export type TCurrentState<U, V extends TDefaultStates> = {
     value: V[number];
@@ -44,7 +44,8 @@ type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> 
     send: (event: W['type'] | W) => void;
     subscribe: TSubscribe<U, V>
     start: () => void;
-    inspect: () => TInspectReturnType<V>
+    inspect: () => TInspectReturnType<V>,
+    mermaidInspect: () => string;
 }
 
 type TInternalStateEnum = 'entered' | 'living' | 'exited' | 'dead';
@@ -430,5 +431,55 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             .flat();
         return { nodes, edges };
     }
-    return { state: currentState, send, subscribe, start, inspect };
+
+    function _mayBeFunction(prop: number | ((...args: any[]) => any)) {
+        if (typeof prop === 'function') {
+            return prop
+        }
+        return () => prop;
+    }
+
+    function _refineActionName(action: string, delay: number | TAfterCallback<U>) {
+        let refinedActionName = action.split('#')
+            .join('')
+        if (refinedActionName === 'after') {
+            refinedActionName = refinedActionName + ' ' + _mayBeFunction(delay)(_context) + 'ms'
+        }
+        return refinedActionName;
+    }
+
+    function mermaidInspect() {
+        let stateChartStr = `
+            stateDiagram-v2
+            classDef currentState fill:#f00,color:white,font-weight:bold,stroke-width:2px,stroke:yellow
+            classDef machineTransitions fill:#01f,color:white,padding-left:80px,padding-right:80px
+                [*] --> ${initialStateValue} 
+        `
+
+
+        for (const state in states) {
+            const _state: V[number] = state;
+            const { stateJSON, delay } = _getStateConfig(states[_state]);
+            const combinedJSON = { ...stateJSON, ...masterStateJSON }
+            Reflect.ownKeys(combinedJSON)
+                .forEach(el => {
+                    const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
+                    const refinedActionName = _refineActionName(actionName, delay)
+                    const target = combinedJSON[el].target;
+                    stateChartStr = `
+                    ${stateChartStr}
+                    ${state} --> ${target}: ${refinedActionName}
+                `
+                })
+        }
+
+        stateChartStr = `
+           ${stateChartStr}
+            class ${currentState.value} currentState
+            class Machine machineTransitions
+        `;
+        return stateChartStr
+    }
+
+    return { state: currentState, send, subscribe, start, inspect, mermaidInspect };
 }
