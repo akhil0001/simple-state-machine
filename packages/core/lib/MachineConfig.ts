@@ -35,9 +35,12 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
 
     constructor(newContext: IContext) {
         this.context = { ...newContext ?? {} };
+        const initialStates: readonly string[] = ['##stateless##']
+        this.addStates(initialStates)
     }
 
-    addStates(states: IStates): TStates<IStates, IContext, IEvents> {
+    addStates<V>(states: V extends readonly string[] ? V : IStates): TStates<IStates, IContext, IEvents> {
+        this.states = {};
         const newStates = states.reduce((acc, curr) => {
             return { ...acc, [curr]: new State<IContext, IStates, IEvents>(curr) };
         }, this.states as TStates<IStates, IContext, IEvents>);
