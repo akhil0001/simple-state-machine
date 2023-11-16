@@ -8,6 +8,8 @@ export const DebounceContainer = () => {
         delay: 1000
     })
 
+    const mermaidStr = mermaidInspect();
+
     return (
         <div>
             <h1>Debounce Machine</h1>
@@ -19,7 +21,7 @@ export const DebounceContainer = () => {
             })} value={state.context.todoValue} />
             <p>State:: {state.value}</p>
             {state.context.data && <p>Response: {state.context.data?.userId}::{state.context.data?.title}</p>}
-            <MermaidInspect mermaidStr={mermaidInspect()} />
+            <MermaidInspect mermaidStr={mermaidStr} />
         </div>
     )
 }
