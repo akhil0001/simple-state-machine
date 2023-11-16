@@ -58,7 +58,6 @@ type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
-    // const { states, context: initialContext } = config;
     const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = config.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
@@ -258,7 +257,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         if (cond(_context)) {
             const effects = masterStateEventsMap.get(actionType)?.stateEventCollection ?? [];
             _runEffects(effects, actionType, data)
-            if (target == null) {
+            if (target === '##notYetDeclared##') {
                 return _runActiveListener(state, actionType, data)
             }
             const nextState = states[target]
@@ -285,6 +284,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         const { target, cond, isSetByDefault } = eventJSON;
         if (cond(_context)) {
             const effects = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
+            _debugLogs('effects::', effects, 'act::', actionType)
             _runEffects(effects, actionType, data)
             const nextState = states[target]
             if (!isSetByDefault) {

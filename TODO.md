@@ -9,6 +9,7 @@
 - [x] refactor -  Remove machine code from index.ts file
 - [x] core - support machine level transitions
 - [x] createMachine - handle machine level tranisitions
+- [x] issue - unchain the chainedActionType in the State class and Machine class
   
 - [ ] hook - create atom like shared state and slices of listeners
 - [ ] hook - Figure a way to pass subscription type to `useMachine`
@@ -16,4 +17,6 @@
 - [ ] core - handle multiple `after`, `always` and `services`
 - [ ] createmachine - handle multiple `after`, `always` and `services`
 - [ ] example - build dino game using state machine
-- [ ] core - what if there is a way to restrict the events on machine level with `exceptWhenIn`
+- [ ] core - what if there is a way to restrict the events on machine level with **`exceptWhenIn`**
+- [ ] core - Move away from the usage of `protected` ES' actual `private` variables
+- [ ] createMachine - Have a similar func like assign of xstate

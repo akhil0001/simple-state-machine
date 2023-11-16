@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Action } from "./Action";
 import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TAfterCallback, TAsyncCallback, TCallback, TSendBack } from "./types";
 
@@ -23,141 +24,133 @@ type TStateJSON<IContext, AllStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-// TODO: Have a similar func like assign of xstate
 export class State<IContext, AllStates extends readonly string[], IEvents extends IDefaultEvent> {
     value: string = '';
-    #stateEvent: StateEvent<IContext, IEvents> = new StateEvent<IContext, IEvents>();
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
     protected callback: TCallback<IContext, IEvents> = () => () => { };
     protected asyncCallback: TAsyncCallback<IContext> = () => new Promise(res => res(null));
-    #chainedActionType: TActionType = '';
     protected delay: number | TAfterCallback<IContext> = 0;
 
     constructor(val: string) {
         this.value = val;
     }
 
-    #initStateEvent() {
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateEvent = stateEvent;
-    }
-
-    #if(cond: TCond<IContext>) {
-        this.stateJSON[this.#chainedActionType].cond = cond;
-        const boundMoveTo = this.#moveTo.bind(this);
-        return { moveTo: boundMoveTo }
-    }
-    #returnStateEventActions() {
-        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
-        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-        return { fireAndForget, updateContext };
-    }
-    #moveTo(target: TTargetState<AllStates>) {
-        this.stateJSON[this.#chainedActionType].target = target;
-        this.stateJSON[this.#chainedActionType].isSetByDefault = false;
-        const returnActions = this.#returnStateEventActions()
-        return { ...returnActions }
+    #updateStateJSON(actionType: TActionType, payload: Partial<{
+        target: TTargetState<AllStates>,
+        cond: TCond<IContext>,
+        isSetByDefault: boolean
+    }>) {
+        const prev = this.stateJSON[actionType];
+        this.stateJSON[actionType] = { ...prev, ...payload }
     }
 
     #onDone() {
-        this.#initStateEvent();
+        const stateEvent = new StateEvent<IContext, IEvents>()
         const actionType = Symbol('##onDone##');
-        this.#chainedActionType = actionType;
+        this.stateEventsMap.set(actionType, stateEvent);
         this.stateJSON[actionType] = {
             target: this.value,
             isSetByDefault: true,
             cond: returnTrue
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        const boundMoveTo = this.#moveTo.bind(this);
-        const returnActions = this.#returnStateEventActions();
-        return { ...returnActions, moveTo: boundMoveTo }
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
+        const returnActions = action.returnStateEventActions()
+        const boundMoveTo = action.moveTo.bind(action)
+        return { moveTo: boundMoveTo, ...returnActions }
     }
 
     #onError() {
-        this.#initStateEvent();
+        const stateEvent = new StateEvent<IContext, IEvents>()
         const actionType = Symbol('##onError##');
-        this.#chainedActionType = actionType;
+        this.stateEventsMap.set(actionType, stateEvent);
         this.stateJSON[actionType] = {
             target: this.value,
             isSetByDefault: true,
             cond: returnTrue
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        const boundMoveTo = this.#moveTo.bind(this);
-        const returnActions = this.#returnStateEventActions();
-        return { ...returnActions, moveTo: boundMoveTo }
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
+        const returnActions = action.returnStateEventActions()
+        const boundMoveTo = action.moveTo.bind(action)
+        return { moveTo: boundMoveTo, ...returnActions }
     }
 
     on(actionType: IEvents['type']) {
-        this.#initStateEvent()
+        const stateEvent = new StateEvent<IContext, IEvents>();
         this.stateJSON[actionType] = {
             target: this.value,
             cond: returnTrue,
             isSetByDefault: true
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        this.#chainedActionType = actionType;
-        const returnActions = this.#returnStateEventActions()
-        const boundIf = this.#if.bind(this)
-        return { moveTo: this.#moveTo.bind(this), if: boundIf, ...returnActions }
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
+        this.stateEventsMap.set(actionType, stateEvent);
+        const returnActions = action.returnStateEventActions()
+        const boundIf = action.if.bind(action)
+        const boundMoveTo = action.moveTo.bind(action)
+        return { moveTo: boundMoveTo, if: boundIf, ...returnActions }
     }
     onEnter() {
-        this.#initStateEvent();
         const actionType = '##enter##'
+        const stateEvent = new StateEvent<IContext, IEvents>();
+        this.stateEventsMap.set(actionType, stateEvent);
         this.stateJSON[actionType] = {
             target: this.value,
             isSetByDefault: true,
             cond: returnTrue
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        this.#chainedActionType = actionType;
-        const returnActions = this.#returnStateEventActions();
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
+        const returnActions = action.returnStateEventActions()
         return { ...returnActions };
     }
     always() {
-        this.#initStateEvent();
         const actionType = Symbol('##always##');
-        this.#chainedActionType = actionType
+        const stateEvent = new StateEvent<IContext, IEvents>();
+        this.stateEventsMap.set(actionType, stateEvent);
         this.stateJSON[actionType] = {
             target: this.value,
             isSetByDefault: true,
             cond: returnTrue
         }
-
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        const boundIf = this.#if.bind(this);
-        const boundMoveTo = this.#moveTo.bind(this);
-        const returnActions = this.#returnStateEventActions();
-
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
+        const returnActions = action.returnStateEventActions();
+        const boundIf = action.if.bind(action);
+        const boundMoveTo = action.moveTo.bind(action)
         return { ...returnActions, if: boundIf, moveTo: boundMoveTo }
     }
     onExit() {
-        this.#initStateEvent();
         const actionType = '##exit##';
+        const stateEvent = new StateEvent<IContext, IEvents>();
+        this.stateEventsMap.set(actionType, stateEvent);
         this.stateJSON[actionType] = {
             target: this.value,
             cond: returnTrue,
             isSetByDefault: true
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        const returnActions = this.#returnStateEventActions();
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
+        const returnActions = action.returnStateEventActions();
         return { ...returnActions }
     }
     after(time: number | TAfterCallback<IContext>) {
         this.delay = time;
-        this.#chainedActionType = '##after##';
-        this.stateJSON[this.#chainedActionType] = {
+        const actionType = '##after##';
+        const stateEvent = new StateEvent<IContext, IEvents>()
+        this.stateEventsMap.set(actionType, stateEvent)
+        this.stateJSON[actionType] = {
             target: this.value,
             cond: returnTrue,
             isSetByDefault: true
         }
-        this.#initStateEvent()
-        this.stateEventsMap.set('##after##', this.#stateEvent)
-        const returnActions = this.#returnStateEventActions()
-        const boundMoveTo = this.#moveTo.bind(this)
-        const boundIf = this.#if.bind(this)
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
+        const returnActions = action.returnStateEventActions()
+        const boundMoveTo = action.moveTo.bind(action)
+        const boundIf = action.if.bind(action)
         return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
     }
     getConfig() {

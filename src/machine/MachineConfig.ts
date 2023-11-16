@@ -1,3 +1,4 @@
+import { Action } from "./Action";
 import { State } from "./State";
 import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TDefaultContext, TDefaultStates } from "./types";
@@ -18,7 +19,7 @@ type TActionType = string | symbol;
 
 type TStateJSON<IContext, IStates extends readonly string[]> = {
     [key: TActionType]: {
-        target: TTargetState<IStates> | null,
+        target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
     }
@@ -31,8 +32,6 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
     protected context: IContext;
     protected stateJSON: TStateJSON<IContext, IStates> = {};
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
-    #stateEvent: StateEvent<IContext, IEvents> = new StateEvent<IContext, IEvents>();
-    #chainedActionType: TActionType = '';
 
     constructor(newContext: IContext) {
         this.context = { ...newContext ?? {} };
@@ -46,36 +45,30 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
         return newStates
     }
 
-    #if(cond: TCond<IContext>) {
-        this.stateJSON[this.#chainedActionType].cond = cond;
-        const boundMoveTo = this.#moveTo.bind(this);
-        return { moveTo: boundMoveTo }
-    }
-    #returnStateEventActions() {
-        const fireAndForget = this.#stateEvent.fireAndForget.bind(this.#stateEvent);
-        const updateContext = this.#stateEvent.updateContext.bind(this.#stateEvent);
-        return { fireAndForget, updateContext };
-    }
-    #moveTo(target: TTargetState<IStates>) {
-        this.stateJSON[this.#chainedActionType].target = target;
-        this.stateJSON[this.#chainedActionType].isSetByDefault = false;
-        const returnActions = this.#returnStateEventActions()
-        return { ...returnActions }
+    #updateStateJSON(actionType: TActionType, payload: Partial<{
+        target: TTargetState<IStates>,
+        cond: TCond<IContext>,
+        isSetByDefault: boolean
+    }>) {
+        const prev = this.stateJSON[actionType];
+        this.stateJSON[actionType] = { ...prev, ...payload }
     }
 
+
     on(actionType: IEvents['type']) {
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateEvent = stateEvent;
-        this.#chainedActionType = actionType;
+        const stateEvent = new StateEvent<IContext, IEvents>()
         this.stateJSON[actionType] = {
-            target: null,
+            cond: returnTrue,
             isSetByDefault: true,
-            cond: returnTrue
+            target: '##notYetDeclared##'
         }
-        this.stateEventsMap.set(actionType, this.#stateEvent);
-        const returnActions = this.#returnStateEventActions()
-        const boundIf = this.#if.bind(this)
-        return { moveTo: this.#moveTo.bind(this), if: boundIf, ...returnActions }
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
+        this.stateEventsMap.set(actionType, stateEvent);
+        const returnActions = action.returnStateEventActions()
+        const boundIf = action.if.bind(action);
+        const boundMoveTo = action.moveTo.bind(action)
+        return { moveTo: boundMoveTo, if: boundIf, ...returnActions }
     }
 
     getConfig() {
