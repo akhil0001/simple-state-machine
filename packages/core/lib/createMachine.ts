@@ -363,6 +363,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function start() {
+        _runSubscriberCallbacks('allChanges')
         _next(_currentState)
     }
 
