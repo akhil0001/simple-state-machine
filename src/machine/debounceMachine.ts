@@ -47,9 +47,6 @@ debouncingMachine.on('updateTodoValue')
 idle.on('updateUrl')
     .updateContext((context, event) => ({ ...context, url: event.data?.url ?? context.url }))
 
-idle.onEnter()
-    .fireAndForget(() => console.log('entered idle state'))
-
 debouncing.after(context => context.delay)
     .moveTo('fetching')
 
