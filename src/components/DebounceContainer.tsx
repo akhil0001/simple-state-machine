@@ -1,8 +1,9 @@
 import { useMachine } from "../hooks"
 import { debouncingMachine } from "../machine/debounceMachine"
+import { MermaidInspect } from "./Mermaid"
 
 export const DebounceContainer = () => {
-    const { state, send } = useMachine(debouncingMachine, {
+    const { state, send, mermaidInspect } = useMachine(debouncingMachine, {
         url: 'https://jsonplaceholder.typicode.com/todos/',
         delay: 1000
     })
@@ -18,6 +19,7 @@ export const DebounceContainer = () => {
             })} value={state.context.todoValue} />
             <p>State:: {state.value}</p>
             {state.context.data && <p>Response: {state.context.data?.userId}::{state.context.data?.title}</p>}
+            <MermaidInspect mermaidStr={mermaidInspect()} />
         </div>
     )
 }
