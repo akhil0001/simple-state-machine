@@ -1,5 +1,5 @@
-import { MachineConfig } from "./machine/MachineConfig";
-import { createMachine } from "./machine/createMachine";
+import { MachineConfig } from "../packages/core/lib/MachineConfig";
+import { createMachine } from "../packages/core/lib/createMachine";
 
 interface IDragAroundContext {
     x: number,

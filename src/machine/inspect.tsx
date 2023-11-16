@@ -2,8 +2,8 @@ import { useEffect, useMemo } from "react";
 import ReactFlow, { Background, BackgroundVariant, MarkerType, useEdgesState, useNodesState } from "reactflow";
 import CustomEdge from "./CustomEdge";
 import { CustomNode } from "./CustomNode";
-import { TInspectReturnType, TSubscribe } from "./createMachine";
-import { TDefaultContext, TDefaultStates } from "./types";
+import { TInspectReturnType, TSubscribe } from "../../packages/core/lib/createMachine";
+import { TDefaultContext, TDefaultStates } from "../../packages/core/lib/types";
 
 interface InspectProps {
     inspect: () => TInspectReturnType<TDefaultStates>

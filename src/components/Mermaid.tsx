@@ -1,6 +1,6 @@
 import mermaid from "mermaid"
 import { useEffect, useRef } from "react"
-import { MachineConfig } from "../machine/MachineConfig";
+import { MachineConfig } from "../../packages/core/lib/MachineConfig";
 import { useMachine } from "../hooks";
 
 interface IContext {

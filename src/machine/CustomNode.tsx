@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position } from 'reactflow';
-import { THandle } from './createMachine';
-import { TDefaultStates } from './types';
+import { THandle } from '../../packages/core/lib/createMachine';
+import { TDefaultStates } from '../../packages/core/lib/types';
 
 const HANDLE_POS_ARR = [Position.Left, Position.Bottom, Position.Right, Position.Top];
 

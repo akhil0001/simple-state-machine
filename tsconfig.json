@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "packages/core/lib/Action.ts", "packages/core/lib/createMachine.ts", "src/machine/debounceMachine.ts", "packages/core/lib/State.ts", "packages/core/lib/MachineConfig.ts", "packages/core/lib/StateEvent.ts", "packages/core/lib/types.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

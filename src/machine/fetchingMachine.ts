@@ -1,5 +1,5 @@
-import { MachineConfig } from "./MachineConfig"
-import { TAsyncCallback } from "./types"
+import { MachineConfig } from "../../packages/core/lib/MachineConfig"
+import { TAsyncCallback } from "../../packages/core/lib/types"
 
 type TStates = Array<'idle' | 'fetching' | 'error'>
 

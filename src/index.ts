@@ -1,6 +1,6 @@
-import { MachineConfig } from "./machine/MachineConfig";
-import { createMachine } from "./machine/createMachine";
-import { IDefaultEvent, TUpdateContextEventCallback } from "./machine/types";
+import { MachineConfig } from "../packages/core/lib/MachineConfig";
+import { createMachine } from "../packages/core/lib/createMachine";
+import { IDefaultEvent, TUpdateContextEventCallback } from "../packages/core/lib/types";
 
 interface ITimerContext {
     currentTime: number,
