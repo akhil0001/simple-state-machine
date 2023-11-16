@@ -3,17 +3,6 @@ import { useEffect, useRef } from "react"
 import { MachineConfig } from "../machine/MachineConfig";
 import { useMachine } from "../hooks";
 
-const chartString = `
-stateDiagram
-[*] --> Still
-Still --> [*]
-
-Still --> Moving
-Moving --> Still
-Moving --> Crash
-Crash --> [*]
-`
-
 interface IContext {
     chartStr: string,
     chartEl: HTMLElement | null
@@ -63,21 +52,20 @@ appending.invokeAsyncCallback(async (context) => {
 
 
 export function MermaidInspect({ mermaidStr }: { mermaidStr: string }) {
-    const { send } = useMachine(machine, {
-        chartStr: chartString
-    })
+    const { send } = useMachine(machine)
 
     const ref = useRef(null);
 
 
-    if (ref.current) {
-        send({
-            type: 'updateChartEl',
-            data: {
-                chartEl: ref.current
-            }
-        })
-    }
+    useEffect(() => {
+        if (ref.current)
+            send({
+                type: 'updateChartEl',
+                data: {
+                    chartEl: ref.current
+                }
+            })
+    }, [send])
 
     useEffect(() => {
         send({
