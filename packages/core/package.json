@@ -1,5 +1,5 @@
 {
-  "name": "core",
+  "name": "@simple-state-machine/core",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,12 @@
   ],
   "main": "./dist/simple-state-machine.umd.cjs",
   "module": "./dist/simple-state-machine.js",
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/simple-state-machine.js",
-      "require": "./dist/simple-state-machine.umd.cjs"
+      "require": "./dist/simple-state-machine.umd.cjs",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
