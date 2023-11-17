@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
-import { IDefaultEvent, TAfterCallback, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
+import { IDefaultEvent, TAfterCallback, TCurrentState, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
-export type TCurrentState<U, V extends TDefaultStates> = {
-    value: V[number];
-    history: V[number];
-    context: U
-}
+
 
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
