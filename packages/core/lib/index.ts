@@ -1,5 +1,5 @@
 import { createMachine } from "./createMachine";
 import { MachineConfig } from "./MachineConfig";
-import * as types from './types'
+export * from './types'
 
-export { createMachine, MachineConfig, types }
+export { createMachine, MachineConfig }
