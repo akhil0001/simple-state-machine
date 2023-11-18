@@ -1,35 +1,34 @@
-import { MachineConfig } from "./MachineConfig"
-import { TAsyncCallback } from "./types"
+import { MachineConfig } from "../lib/MachineConfig";
+import { TAsyncCallback } from "../lib/types";
 
-type TStates = Array<'idle' | 'fetching' | 'error'>
+type TStates = Array<'idle' | 'fetching' | 'debouncing' | 'error'>
 
 interface IAPIResponse {
     userId: string;
-    title: string
+    title: string;
 }
 
 interface IContext {
-    url: string,
+    url: string;
     data: IAPIResponse | null,
-    todoValue: string
+    todoValue: string;
+    delay: number
 }
 
 type TEvents = {
-    type: 'fetch' | 'updateUrl' | 'updateTodoValue',
+    type: 'updateTodoValue',
     data?: {
-        url?: string;
         response?: IAPIResponse,
         todoValue?: string
     }
 }
 
-export const fetchingMachineConfig = new MachineConfig<IContext, TStates, TEvents>({
+export const debounceMachine = new MachineConfig<IContext, TStates, TEvents>({
     url: '',
     data: null,
-    todoValue: "1"
+    todoValue: "1",
+    delay: 500
 })
-
-const { idle, fetching, error } = fetchingMachineConfig.addStates(['idle', 'fetching', 'error'])
 
 const fetchingUrl: TAsyncCallback<IContext> = (context) => {
     const { url } = context
@@ -38,25 +37,23 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
         .then(data => ({ response: data }))
 }
 
-idle.on('updateUrl')
-    .updateContext((context, event) => ({ ...context, url: event.data?.url ?? context.url }));
+const { debouncing, fetching } = debounceMachine.addStates(['idle', 'debouncing', 'fetching', 'error'])
 
-idle.on('updateTodoValue')
+debounceMachine.on('updateTodoValue')
+    .moveTo('debouncing')
     .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
-idle.on('fetch')
+
+debouncing.after(context => context.delay)
     .moveTo('fetching')
+
 
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
-    .fireAndForget((_, event) => console.log(event.data))
     .updateContext((context, event) => ({ ...context, data: event.data?.response ?? null }))
+    .fireAndForget(console.log)
 
 fetching.invokeAsyncCallback(fetchingUrl)
     .onError()
     .moveTo('error')
-    .fireAndForget(() => console.log('fetch error'))
-
-error.on('fetch')
-    .moveTo('fetching')

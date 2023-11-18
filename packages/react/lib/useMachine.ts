@@ -1,7 +1,5 @@
+import { IDefaultEvent, MachineConfig, TCurrentState, TDefaultContext, TDefaultStates, createMachine } from "@simple-state-machine/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MachineConfig } from "../machine/MachineConfig";
-import { TCurrentState, createMachine } from "../machine/createMachine";
-import { IDefaultEvent, TDefaultContext, TDefaultStates } from "../machine/types";
 
 export function useMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<U> = {} as U) {
     const { state: initialState, send, subscribe, start, mermaidInspect } = useMemo(() => {

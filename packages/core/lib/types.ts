@@ -32,3 +32,9 @@ export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: ICont
 export type TAsyncCallback<IContext> = (context: IContext) => Promise<any>
 
 export type TAfterCallback<IContext> = (context: IContext) => number;
+
+export type TCurrentState<U, V extends TDefaultStates> = {
+    value: V[number];
+    history: V[number];
+    context: U
+}
