@@ -22,7 +22,7 @@ function init() {
     // just state change
     subscribe('stateChange', state => {
         if (statusEl) {
-            statusEl.innerText = "Current State of Machine : " + state.value
+            statusEl.innerHTML = "Current State of Machine : <i>" + state.value + '</i>'
         }
     });
     // for all changes
