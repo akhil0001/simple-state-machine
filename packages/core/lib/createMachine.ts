@@ -50,7 +50,7 @@ type TInternalState<V extends TDefaultStates> = {
 
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
-// function
+// functions
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = config.getConfig();
     let _context = { ...initialContext, ...context };
