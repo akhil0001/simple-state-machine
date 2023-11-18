@@ -3,8 +3,7 @@ import { MachineConfig } from "./MachineConfig";
 import { State } from "./State";
 import { IDefaultEvent, TAfterCallback, TCurrentState, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
-
-
+// types
 type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
 
 export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
@@ -40,7 +39,6 @@ type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> 
     send: (event: W['type'] | W) => void;
     subscribe: TSubscribe<U, V>
     start: () => void;
-    inspect: () => TInspectReturnType<V>,
     mermaidInspect: () => string;
 }
 
@@ -52,8 +50,7 @@ type TInternalState<V extends TDefaultStates> = {
 
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
-
-
+// function
 export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = config.getConfig();
     let _context = { ...initialContext, ...context };
@@ -363,72 +360,6 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _next(_currentState)
     }
 
-    function inspect() {
-        const stateHandles: Record<string, {
-            source: string[];
-            target: string[]
-        }> = {}
-        for (const state in states) {
-            const _state: V[number] = state;
-            const { stateJSON } = _getStateConfig(states[_state]);
-            stateHandles[_state] = {
-                source: [],
-                target: stateHandles[_state]?.target ?? []
-            }
-            Reflect.ownKeys(stateJSON)
-                .forEach(el => {
-                    const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
-                    const target = stateJSON[el].target;
-                    const stateHandle = stateHandles[target];
-                    stateHandles[_state].source.push(actionName + _state + target)
-                    if (stateHandle?.target) {
-                        stateHandle.target.push(actionName + target + _state)
-                    }
-                    else {
-                        stateHandles[target] = {
-                            source: [],
-                            target: [actionName + target + _state]
-                        }
-                    }
-                })
-        }
-        const nodes = Object.keys(states)
-            .map((stateVal: V[number]) => {
-                return {
-                    id: stateVal,
-                    data: {
-                        label: stateVal,
-                        handles: stateHandles[stateVal]
-                    }
-                }
-            });
-
-        const edges = Object.keys(states)
-            .map((stateVal: V[number]) => {
-                const state = states[stateVal];
-                const { stateJSON } = _getStateConfig(state)
-                const result = Reflect.ownKeys(stateJSON)
-                    .map((el: string | symbol) => {
-                        const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
-                        const source = stateVal;
-                        const target = stateJSON[el].target
-                        const res: TEdge<V> = {
-                            type: source === target ? 'custom' : 'custom',
-                            source: source,
-                            target: target,
-                            sourceHandle: actionName + source + target,
-                            label: actionName,
-                            id: `e-${actionName}-${source}-${target}`,
-                            animated: true
-                        }
-                        return res;
-                    })
-                return result
-            })
-            .flat();
-        return { nodes, edges };
-    }
-
     function _mayBeFunction(prop: number | ((...args: any[]) => any)) {
         if (typeof prop === 'function') {
             return prop
@@ -452,8 +383,6 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
             classDef machineTransitions fill:#01f,color:white,padding-left:80px,padding-right:80px
                 [*] --> ${initialStateValue} 
         `
-
-
         for (const state in states) {
             const _state: V[number] = state;
             const { stateJSON, delay } = _getStateConfig(states[_state]);
@@ -478,5 +407,5 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return stateChartStr
     }
 
-    return { state: currentState, send, subscribe, start, inspect, mermaidInspect };
+    return { state: currentState, send, subscribe, start, mermaidInspect };
 }
