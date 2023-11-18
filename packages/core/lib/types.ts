@@ -13,7 +13,7 @@ export interface IDefaultEvent {
     }
 }
 
-type TStateEventCallback<IContext, IEvents, ReturnType> = (context: IContext, event: IEvents) => ReturnType;
+export type TStateEventCallback<IContext, IEvents, ReturnType> = (context: IContext, event: IEvents) => ReturnType;
 
 export type TFireAndForgetEventCallback<IContext, IEvents> = TStateEventCallback<IContext, IEvents, void>
 export type TUpdateContextEventCallback<IContext, IEvents> = TStateEventCallback<IContext, IEvents, IContext>

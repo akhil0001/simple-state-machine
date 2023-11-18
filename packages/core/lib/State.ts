@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Action } from "./Action";
+import { Action, TIf, TMoveTo } from "./Action";
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TAfterCallback, TAsyncCallback, TCallback, TSendBack } from "./types";
+import { IDefaultEvent, TAfterCallback, TAsyncCallback, TCallback, TSendBack, TStateEventCallback } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -45,7 +45,11 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         this.stateJSON[actionType] = { ...prev, ...payload }
     }
 
-    #onDone() {
+    #onDone(): {
+        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const stateEvent = new StateEvent<IContext, IEvents>()
         const actionType = Symbol('##onDone##');
         this.stateEventsMap.set(actionType, stateEvent);
@@ -61,7 +65,11 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         return { moveTo: boundMoveTo, ...returnActions }
     }
 
-    #onError() {
+    #onError(): {
+        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const stateEvent = new StateEvent<IContext, IEvents>()
         const actionType = Symbol('##onError##');
         this.stateEventsMap.set(actionType, stateEvent);
@@ -77,7 +85,12 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         return { moveTo: boundMoveTo, ...returnActions }
     }
 
-    on(actionType: IEvents['type']) {
+    on(actionType: IEvents['type']): {
+        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        if: TIf<IContext, AllStates, IEvents>
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const stateEvent = new StateEvent<IContext, IEvents>();
         this.stateJSON[actionType] = {
             target: this.value,
@@ -92,7 +105,10 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const boundMoveTo = action.moveTo.bind(action)
         return { moveTo: boundMoveTo, if: boundIf, ...returnActions }
     }
-    onEnter() {
+    onEnter(): {
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const actionType = '##enter##'
         const stateEvent = new StateEvent<IContext, IEvents>();
         this.stateEventsMap.set(actionType, stateEvent);
@@ -106,7 +122,12 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const returnActions = action.returnStateEventActions()
         return { ...returnActions };
     }
-    always() {
+    always(): {
+        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        if: TIf<IContext, AllStates, IEvents>
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const actionType = Symbol('##always##');
         const stateEvent = new StateEvent<IContext, IEvents>();
         this.stateEventsMap.set(actionType, stateEvent);
@@ -122,7 +143,10 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const boundMoveTo = action.moveTo.bind(action)
         return { ...returnActions, if: boundIf, moveTo: boundMoveTo }
     }
-    onExit() {
+    onExit(): {
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const actionType = '##exit##';
         const stateEvent = new StateEvent<IContext, IEvents>();
         this.stateEventsMap.set(actionType, stateEvent);
@@ -136,7 +160,12 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         const returnActions = action.returnStateEventActions();
         return { ...returnActions }
     }
-    after(time: number | TAfterCallback<IContext>) {
+    after(time: number | TAfterCallback<IContext>): {
+        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        if: TIf<IContext, AllStates, IEvents>
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         this.delay = time;
         const actionType = '##after##';
         const stateEvent = new StateEvent<IContext, IEvents>()
@@ -163,12 +192,30 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
             asyncCallback
         }
     }
-    invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void) {
+    invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void): {
+        on: (actionType: IEvents['type']) => {
+            moveTo: TMoveTo<IContext, AllStates, IEvents>,
+            if: TIf<IContext, AllStates, IEvents>
+            fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+            updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+        }
+    } {
         this.callback = callback;
         const boundOn = this.on.bind(this);
         return { on: boundOn }
     }
-    invokeAsyncCallback(callback: TAsyncCallback<IContext>) {
+    invokeAsyncCallback(callback: TAsyncCallback<IContext>): {
+        onDone: () => {
+            moveTo: TMoveTo<IContext, AllStates, IEvents>,
+            fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+            updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+        },
+        onError: () => {
+            moveTo: TMoveTo<IContext, AllStates, IEvents>,
+            fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+            updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+        }
+    } {
         this.asyncCallback = callback;
         const boundOnDone = this.#onDone.bind(this)
         const boundOnError = this.#onError.bind(this);

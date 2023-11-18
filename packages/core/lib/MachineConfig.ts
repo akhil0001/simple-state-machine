@@ -1,7 +1,7 @@
-import { Action } from "./Action";
+import { Action, TIf, TMoveTo } from "./Action";
 import { State } from "./State";
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TDefaultContext, TDefaultStates } from "./types";
+import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
 
 type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
     [TIndex in T[number]]: State<IContext, T, IEvents>
@@ -58,7 +58,12 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
     }
 
 
-    on(actionType: IEvents['type']) {
+    on(actionType: IEvents['type']): {
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>,
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const stateEvent = new StateEvent<IContext, IEvents>()
         this.stateJSON[actionType] = {
             cond: returnTrue,
@@ -66,7 +71,7 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
             target: '##notYetDeclared##'
         }
         const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
+        const action = new Action<IContext, IStates, IEvents>(actionType, boundUpdateStateJSON, stateEvent)
         this.stateEventsMap.set(actionType, stateEvent);
         const returnActions = action.returnStateEventActions()
         const boundIf = action.if.bind(action);
