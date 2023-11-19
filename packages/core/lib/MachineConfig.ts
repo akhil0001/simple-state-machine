@@ -5,7 +5,7 @@ import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } f
 
 type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
     [TIndex in T[number]]: State<IContext, T, IEvents>
-} | Record<string, State<IContext, T, IEvents>>
+}
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
@@ -27,25 +27,29 @@ type TStateJSON<IContext, IStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
+export const tuple = <T extends readonly string[]>(...args: T) => args;
+export const actionTuple = <T extends readonly string[]>(...args: T) => args;
 export class MachineConfig<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> {
-    protected states: TStates<IStates, IContext, IEvents> = {};
+    protected states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     protected context: IContext;
     protected stateJSON: TStateJSON<IContext, IStates> = {};
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
-
-    constructor(newContext: IContext) {
+    constructor(states: IStates, newContext: IContext) {
         this.context = { ...newContext ?? {} };
-        const initialStates: readonly string[] = ['##stateless##']
-        this.addStates(initialStates)
+        this.#addStates<typeof states>(states)
     }
 
-    addStates<V>(states: V extends readonly string[] ? V : IStates): TStates<IStates, IContext, IEvents> {
-        this.states = {};
+
+    #addStates<U extends readonly string[]>(states: U): TStates<U, IContext, IEvents> {
         const newStates = states.reduce((acc, curr) => {
-            return { ...acc, [curr]: new State<IContext, IStates, IEvents>(curr) };
-        }, this.states as TStates<IStates, IContext, IEvents>);
-        this.states = newStates;
-        return newStates
+            return { ...acc, [curr]: new State<IContext, U, IEvents>(curr) };
+        }, {} as TStates<U, IContext, IEvents>);
+        this.states = { ...this.states, ...newStates };
+        return newStates;
+    }
+
+    getStates(): TStates<IStates, IContext, IEvents> {
+        return this.states
     }
 
     #updateStateJSON(actionType: TActionType, payload: Partial<{
