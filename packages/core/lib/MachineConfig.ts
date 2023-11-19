@@ -28,15 +28,22 @@ type TStateJSON<IContext, IStates extends readonly string[]> = {
 const returnTrue = () => true;
 
 export const tuple = <T extends readonly string[]>(...args: T) => args;
-export const actionTuple = <T extends readonly string[]>(...args: T) => args;
-export class MachineConfig<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> {
+
+
+export function eventTuple<T extends readonly string[]>(...args: T) {
+    return args
+}
+export class MachineConfig<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends readonly string[]> {
     protected states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     protected context: IContext;
     protected stateJSON: TStateJSON<IContext, IStates> = {};
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
-    constructor(states: IStates, newContext: IContext) {
+    #actions: IEvents;
+
+    constructor(states: IStates, newContext: IContext, actions: IEvents) {
         this.context = { ...newContext ?? {} };
         this.#addStates<typeof states>(states)
+        this.#actions = actions
     }
 
 
@@ -62,7 +69,7 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
     }
 
 
-    on(actionType: IEvents['type']): {
+    on(actionType: IEvents[number]): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         if: TIf<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
@@ -74,7 +81,7 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
             isSetByDefault: true,
             target: '##notYetDeclared##'
         }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
         const action = new Action<IContext, IStates, IEvents>(actionType, boundUpdateStateJSON, stateEvent)
         this.stateEventsMap.set(actionType, stateEvent);
         const returnActions = action.returnStateEventActions()
@@ -84,9 +91,10 @@ export class MachineConfig<IContext extends TDefaultContext, IStates extends TDe
     }
 
     getConfig() {
+        const actions = this.#actions;
         const { states, context, stateEventsMap, stateJSON } = this
         return {
-            states, context, stateEventsMap, stateJSON
+            states, context, stateEventsMap, stateJSON, actions
         }
     }
 

@@ -36,7 +36,7 @@ export type TInspectReturnType<V extends TDefaultStates> = {
 
 type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> = {
     state: TCurrentState<U, V>;
-    send: (event: W['type'] | W) => void;
+    send: (action: { type: W[number], data?: Record<string, any> } | W[number]) => void;
     subscribe: TSubscribe<U, V>
     start: () => void;
     mermaidInspect: () => string;
@@ -96,15 +96,15 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         _runSubscriberCallbacks('stateChange')
     }
 
-    function _runEffects(effects: TStateEvent<U, W>[], actionType: string | symbol, data: Record<string, any> = {}) {
+    function _runEffects(effects: TStateEvent<U, W>[], actionType: W[number] | symbol, data: Record<string, any> = {}) {
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
-                const newContext = callback(_context, { type: actionType, data } as W)
+                const newContext = callback(_context, { type: actionType, data })
                 _setContext(newContext)
             }
             if (type === 'fireAndForget') {
-                callback(_context, { type: actionType, data } as W)
+                callback(_context, { type: actionType, data })
             }
         })
     }
@@ -337,13 +337,13 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return state.getConfig()
     }
 
-    function send(action: W['type'] | W) {
+    function send(action: { type: W[number], data?: Record<string, any> } | W[number]) {
         if (!_getIsStarted()) {
             console.warn('start the machine using .start method before sending the events');
             return;
         }
         if (typeof action === "object")
-            _next(_currentState, action.type, action.data)
+            _next(_currentState, action.type, action?.data)
         else
             _next(_currentState, action)
     }

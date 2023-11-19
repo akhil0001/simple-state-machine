@@ -1,8 +1,8 @@
-import { TStateEvent, TStateEventCallback } from "./types";
+import { IDefaultEvent, TStateEvent, TStateEventCallback } from "./types";
 
 
-type TStateEventCollection<IContext, IEvents> = TStateEvent<IContext, IEvents>[]
-export class StateEvent<IContext, IEvents> {
+type TStateEventCollection<IContext, IEvents extends IDefaultEvent> = TStateEvent<IContext, IEvents>[]
+export class StateEvent<IContext, IEvents extends IDefaultEvent> {
     stateEventCollection: TStateEventCollection<IContext, IEvents> = []
     constructor() {
         this.stateEventCollection = [];

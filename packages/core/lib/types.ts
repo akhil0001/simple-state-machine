@@ -6,26 +6,27 @@ export type TDefaultContext = {
 
 export type TDefaultStates = readonly string[]
 
-export interface IDefaultEvent {
-    type: string | symbol;
-    data?: {
-        [key: string]: any;
-    }
-}
+// export interface IDefaultEvent {
+//     type: string | symbol;
+//     data?: {
+//         [key: string]: any;
+//     }
+// }
 
-export type TStateEventCallback<IContext, IEvents, ReturnType> = (context: IContext, event: IEvents) => ReturnType;
+export type IDefaultEvent = readonly string[];
+export type TStateEventCallback<IContext, IEvents extends IDefaultEvent, ReturnType> = (context: IContext, event: { type: IEvents[number] | symbol, data: Record<string, any> }) => ReturnType;
 
-export type TFireAndForgetEventCallback<IContext, IEvents> = TStateEventCallback<IContext, IEvents, void>
-export type TUpdateContextEventCallback<IContext, IEvents> = TStateEventCallback<IContext, IEvents, IContext>
+export type TFireAndForgetEventCallback<IContext, IEvents extends IDefaultEvent> = TStateEventCallback<IContext, IEvents, void>
+export type TUpdateContextEventCallback<IContext, IEvents extends IDefaultEvent> = TStateEventCallback<IContext, IEvents, IContext>
 
-export type TStateEvent<IContext, IEvents> = {
+export type TStateEvent<IContext, IEvents extends IDefaultEvent> = {
     type: 'fireAndForget'
     callback: TStateEventCallback<IContext, IEvents, void>
 } | {
     type: 'updateContext',
     callback: TStateEventCallback<IContext, IEvents, IContext>
 }
-export type TSendBack<IEvents extends IDefaultEvent> = (action: IEvents['type'] | IEvents) => void
+export type TSendBack<IEvents extends IDefaultEvent> = (action: { type: IEvents[number], data?: Record<string, any> } | IEvents[number]) => void
 
 export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: IContext, sendBack: TSendBack<IEvents>) => () => void;
 

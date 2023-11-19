@@ -1,17 +1,19 @@
-const { MachineConfig, tuple, actionTuple } = require("../lib/MachineConfig");
+const { MachineConfig, tuple, eventTuple } = require("../lib/MachineConfig");
 const { createMachine } = require("../lib/createMachine");
 
 const machineStates = tuple("idle", "fething");
-const actions = actionTuple("idle", "lol");
-const someMachine = new MachineConfig(machineStates, { count: 0 }, actions);
+
+const events = eventTuple("fetching", "lol");
+
+const someMachine = new MachineConfig(machineStates, { count: 0 }, events);
 
 const { idle, fething } = someMachine.getStates();
 
 idle.always().moveTo("fething");
-idle.on("lol");
+idle.on("fetching");
 
-someMachine.on("idle").moveTo("fething");
+someMachine.on("fetching").moveTo("fething");
 
 const machine = createMachine(someMachine);
 
-machine.send("lol");
+machine.send({ type: "fetching", data: {} });

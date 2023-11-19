@@ -24,7 +24,7 @@ type TStateJSON<IContext, AllStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-export class State<IContext, AllStates extends readonly string[], IEvents extends IDefaultEvent> {
+export class State<IContext, AllStates extends readonly string[], IEvents extends readonly string[]> {
     value: string = '';
     protected stateJSON: TStateJSON<IContext, AllStates> = {}
     protected stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
@@ -85,7 +85,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         return { moveTo: boundMoveTo, ...returnActions }
     }
 
-    on(actionType: IEvents['type']): {
+    on(actionType: IEvents[number]): {
         moveTo: TMoveTo<IContext, AllStates, IEvents>,
         if: TIf<IContext, AllStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
@@ -193,7 +193,7 @@ export class State<IContext, AllStates extends readonly string[], IEvents extend
         }
     }
     invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void): {
-        on: (actionType: IEvents['type']) => {
+        on: (actionType: IEvents[number]) => {
             moveTo: TMoveTo<IContext, AllStates, IEvents>,
             if: TIf<IContext, AllStates, IEvents>
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
