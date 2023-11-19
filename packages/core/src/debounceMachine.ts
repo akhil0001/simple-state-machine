@@ -1,7 +1,7 @@
-import { MachineConfig } from "../lib/MachineConfig";
+import { MachineConfig, tuple } from "../lib/MachineConfig";
 import { TAsyncCallback } from "../lib/types";
 
-type TStates = Array<'idle' | 'fetching' | 'debouncing' | 'error'>
+const states = tuple('idle', 'fetching', 'debouncing', 'error')
 
 interface IAPIResponse {
     userId: string;
@@ -23,7 +23,7 @@ type TEvents = {
     }
 }
 
-export const debounceMachine = new MachineConfig<IContext, TStates, TEvents>({
+export const debounceMachine = new MachineConfig<IContext, typeof states, TEvents>(states, {
     url: '',
     data: null,
     todoValue: "1",
@@ -36,8 +36,7 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
         .then(res => res.json())
         .then(data => ({ response: data }))
 }
-
-const { debouncing, fetching } = debounceMachine.addStates(['idle', 'debouncing', 'fetching', 'error'])
+const { fetching, idle, debouncing } = debounceMachine.getStates()
 
 debounceMachine.on('updateTodoValue')
     .moveTo('debouncing')
