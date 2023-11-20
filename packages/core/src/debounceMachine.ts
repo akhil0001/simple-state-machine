@@ -1,7 +1,9 @@
-import { MachineConfig } from "../lib/MachineConfig";
-import { TAsyncCallback } from "../lib/types";
+import { MachineConfig, TAsyncCallback, createStates } from "../lib";
+import { createEvents } from "../lib/MachineConfig";
 
-type TStates = Array<'idle' | 'fetching' | 'debouncing' | 'error'>
+
+const states = createStates('idle', 'fetching', 'debouncing', 'error')
+const events = createEvents('updateTodoValue')
 
 interface IAPIResponse {
     userId: string;
@@ -15,20 +17,12 @@ interface IContext {
     delay: number
 }
 
-type TEvents = {
-    type: 'updateTodoValue',
-    data?: {
-        response?: IAPIResponse,
-        todoValue?: string
-    }
-}
-
-export const debounceMachine = new MachineConfig<IContext, TStates, TEvents>({
+export const debounceMachine = new MachineConfig<typeof states, IContext, typeof events>(states, {
     url: '',
     data: null,
     todoValue: "1",
     delay: 500
-})
+}, events)
 
 const fetchingUrl: TAsyncCallback<IContext> = (context) => {
     const { url } = context
@@ -36,8 +30,7 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
         .then(res => res.json())
         .then(data => ({ response: data }))
 }
-
-const { debouncing, fetching } = debounceMachine.addStates(['idle', 'debouncing', 'fetching', 'error'])
+const { fetching, idle, debouncing } = debounceMachine.getStates()
 
 debounceMachine.on('updateTodoValue')
     .moveTo('debouncing')
@@ -46,7 +39,6 @@ debounceMachine.on('updateTodoValue')
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
-
 
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()

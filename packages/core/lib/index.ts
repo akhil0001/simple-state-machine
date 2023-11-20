@@ -1,5 +1,4 @@
-import { createMachine } from "./createMachine";
-import { MachineConfig } from "./MachineConfig";
+export { createMachine } from "./createMachine";
+export { MachineConfig } from "./MachineConfig";
+export { createStates, createEvents } from './utils'
 export * from './types'
-
-export { createMachine, MachineConfig }
