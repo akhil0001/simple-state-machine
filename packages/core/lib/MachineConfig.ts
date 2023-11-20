@@ -38,11 +38,11 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
     #actions: IEvents;
 
     constructor(states: IStates, newContext: IContext, actions: IEvents) {
+        const defaultState: readonly string[] = ['##notYetDeclared##']
         this.#context = { ...newContext ?? {} };
-        this.#addStates<typeof states>(states)
+        this.#addStates<typeof states>(states.length > 0 ? states : defaultState as IStates)
         this.#actions = actions
     }
-
 
     #addStates<U extends readonly string[]>(states: U): TStates<U, IContext, IEvents> {
         const newStates = states.reduce((acc, curr) => {
