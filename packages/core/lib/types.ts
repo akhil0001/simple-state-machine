@@ -6,13 +6,6 @@ export type TDefaultContext = {
 
 export type TDefaultStates = readonly string[]
 
-// export interface IDefaultEvent {
-//     type: string | symbol;
-//     data?: {
-//         [key: string]: any;
-//     }
-// }
-
 export type IDefaultEvent = readonly string[];
 export type TStateEventCallback<IContext, IEvents extends IDefaultEvent, ReturnType> = (context: IContext, event: { type: IEvents[number] | symbol, data: Record<string, any> }) => ReturnType;
 

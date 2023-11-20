@@ -4,7 +4,7 @@ import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
 
 type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
-    [TIndex in T[number]]: State<IContext, T, IEvents>
+    [TIndex in T[number]as string]: State<IContext, T, IEvents>
 }
 
 type TConvertArrToObj<TArr extends readonly string[]> = {

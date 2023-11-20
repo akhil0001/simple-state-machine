@@ -30,17 +30,17 @@ export type TIf<IContext, IStates extends TDefaultStates, IEvents extends IDefau
 
 export class Action<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> {
 
-    protected actionType: TActionType = ''
+    #actionType: TActionType = ''
     #stateEvent: StateEvent<IContext, IEvents> = new StateEvent<IContext, IEvents>();
     #updateStateJSON: TUpdateStateJSON<IContext, IStates>
 
     constructor(actionType: TActionType, updateStateJSON: TUpdateStateJSON<IContext, IStates>, stateEvent: StateEvent<IContext, IEvents>) {
-        this.actionType = actionType
+        this.#actionType = actionType
         this.#updateStateJSON = updateStateJSON;
         this.#stateEvent = stateEvent
     }
     if(cond: TCond<IContext>): ReturnType<TIf<IContext, IStates, IEvents>> {
-        this.#updateStateJSON(this.actionType, { cond: cond })
+        this.#updateStateJSON(this.#actionType, { cond: cond })
         const boundMoveTo = this.moveTo.bind(this);
         return { moveTo: boundMoveTo }
     }
@@ -50,7 +50,7 @@ export class Action<IContext, IStates extends TDefaultStates, IEvents extends ID
         return { fireAndForget, updateContext };
     }
     moveTo(target: TTargetState<IStates>): ReturnType<TMoveTo<IContext, IStates, IEvents>> {
-        this.#updateStateJSON(this.actionType, { target: target, isSetByDefault: false })
+        this.#updateStateJSON(this.#actionType, { target: target, isSetByDefault: false })
         const returnActions = this.returnStateEventActions()
         return { ...returnActions }
     }
