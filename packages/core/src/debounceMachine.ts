@@ -17,7 +17,7 @@ interface IContext {
     delay: number
 }
 
-export const debounceMachine = new MachineConfig<IContext, typeof states, typeof events>(states, {
+export const debounceMachine = new MachineConfig<typeof states, IContext, typeof events>(states, {
     url: '',
     data: null,
     todoValue: "1",

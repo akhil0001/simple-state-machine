@@ -30,7 +30,7 @@ const returnTrue = () => true;
 export function createEvents<T extends readonly string[]>(...args: T) {
     return args
 }
-export class MachineConfig<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends readonly string[]> {
+export class MachineConfig<IStates extends TDefaultStates, IContext extends TDefaultContext, IEvents extends readonly string[]> {
     protected states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     protected context: IContext;
     protected stateJSON: TStateJSON<IContext, IStates> = {};
