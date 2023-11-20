@@ -24,7 +24,7 @@ type TStateJSON<IContext, AllStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-export class State<IContext, AllStates extends readonly string[], IEvents extends readonly string[]> {
+export class State<AllStates extends readonly string[], IContext, IEvents extends readonly string[]> {
     #value: string = '';
     #stateJSON: TStateJSON<IContext, AllStates> = {}
     #stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();

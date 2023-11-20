@@ -4,7 +4,7 @@ import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
 
 type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
-    [TIndex in T[number]as string]: State<IContext, T, IEvents>
+    [TIndex in T[number]as string]: State<T, IContext, IEvents>
 }
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -46,7 +46,7 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
 
     #addStates<U extends readonly string[]>(states: U): TStates<U, IContext, IEvents> {
         const newStates = states.reduce((acc, curr) => {
-            return { ...acc, [curr]: new State<IContext, U, IEvents>(curr) };
+            return { ...acc, [curr]: new State<U, IContext, IEvents>(curr) };
         }, {} as TStates<U, IContext, IEvents>);
         this.#states = { ...this.#states, ...newStates };
         return newStates;
