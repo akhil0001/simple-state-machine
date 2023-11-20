@@ -27,10 +27,7 @@ type TStateJSON<IContext, IStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-export const tuple = <T extends readonly string[]>(...args: T) => args;
-
-
-export function eventTuple<T extends readonly string[]>(...args: T) {
+export function createEvents<T extends readonly string[]>(...args: T) {
     return args
 }
 export class MachineConfig<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends readonly string[]> {

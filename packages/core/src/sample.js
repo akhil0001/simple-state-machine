@@ -1,9 +1,13 @@
-const { MachineConfig, tuple, eventTuple } = require("../lib/MachineConfig");
-const { createMachine } = require("../lib/createMachine");
+import {
+  MachineConfig,
+  createMachine,
+  createStates,
+  createEvents,
+} from "../lib";
 
-const machineStates = tuple("idle", "fething");
+const machineStates = createStates("idle", "fething");
 
-const events = eventTuple("fetching", "lol");
+const events = createEvents("fetching", "lol");
 
 const someMachine = new MachineConfig(machineStates, { count: 0 }, events);
 

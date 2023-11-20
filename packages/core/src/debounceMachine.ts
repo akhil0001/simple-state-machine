@@ -1,7 +1,9 @@
-import { MachineConfig, eventTuple, tuple } from "../lib/MachineConfig";
-import { TAsyncCallback } from "../lib/types";
+import { MachineConfig, TAsyncCallback, createStates } from "../lib";
+import { createEvents } from "../lib/MachineConfig";
 
-const states = tuple('idle', 'fetching', 'debouncing', 'error')
+
+const states = createStates('idle', 'fetching', 'debouncing', 'error')
+const events = createEvents('updateTodoValue')
 
 interface IAPIResponse {
     userId: string;
@@ -15,7 +17,6 @@ interface IContext {
     delay: number
 }
 
-const events = eventTuple('updateTodoValue')
 export const debounceMachine = new MachineConfig<IContext, typeof states, typeof events>(states, {
     url: '',
     data: null,
