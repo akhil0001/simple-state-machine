@@ -27,8 +27,8 @@ export type TAsyncCallback<IContext> = (context: IContext) => Promise<any>
 
 export type TAfterCallback<IContext> = (context: IContext) => number;
 
-export type TCurrentState<U, V extends TDefaultStates> = {
-    value: V[number];
-    history: V[number];
-    context: U
+export type TCurrentState<U extends TDefaultStates, V> = {
+    value: U[number];
+    history: U[number];
+    context: V
 }

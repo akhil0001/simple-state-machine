@@ -4,9 +4,9 @@ import { State } from "./State";
 import { IDefaultEvent, TAfterCallback, TCurrentState, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 // types
-type TSubscribeCb<U, V extends TDefaultStates> = (state: TCurrentState<U, V>) => any
+type TSubscribeCb<U extends TDefaultStates, V> = (state: TCurrentState<U, V>) => any
 
-export type TSubscribe<U, V extends TDefaultStates> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
+export type TSubscribe<U extends TDefaultStates, V> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
 
 export type THandle<V extends TDefaultStates> = {
     source: V[number][];
@@ -34,7 +34,7 @@ export type TInspectReturnType<V extends TDefaultStates> = {
     edges: TEdge<V>[]
 }
 
-type TCreateMachineReturn<U, V extends TDefaultStates, W extends IDefaultEvent> = {
+type TCreateMachineReturn<U extends TDefaultStates, V, W extends IDefaultEvent> = {
     state: TCurrentState<U, V>;
     send: (action: { type: W[number], data?: Record<string, any> } | W[number]) => void;
     subscribe: TSubscribe<U, V>
@@ -51,20 +51,20 @@ type TInternalState<V extends TDefaultStates> = {
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // functions
-export function createMachine<U extends TDefaultContext, V extends TDefaultStates, W extends IDefaultEvent>(config: MachineConfig<U, V, W>, context: Partial<U> = {} as U): TCreateMachineReturn<U, V, W> {
-    const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = config.getConfig();
+export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V): TCreateMachineReturn<U, V, W> {
+    const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = machineConfig.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
     const _debug = false;
     const currentState = {
-        value: _currentState.value,
-        history: _currentState.value,
+        value: initialStateValue,
+        history: initialStateValue,
         context: _context // TODO: Should deep clone this
     }
 
     let isStarted = false;
-    const _internalState: TInternalState<V> = {
+    const _internalState: TInternalState<U> = {
         value: 'dead',
         stateValue: currentState.value
     };
@@ -83,20 +83,22 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return isStarted;
     }
 
-    function _setContext(newContext: U) {
+    function _setContext(newContext: V) {
         _context = { ...newContext };
         currentState.context = _context;
         _runSubscriberCallbacks('contextChange')
     }
 
     function _setCurrentState(newState: State<U, V, W>) {
-        currentState.history = _currentState.value;
+        const { value: newStateValue } = _getStateConfig(newState)
+        const { value: currentStateValue } = _getStateConfig(_currentState)
+        currentState.history = currentStateValue;
         _currentState = newState;
-        currentState.value = newState.value;
+        currentState.value = newStateValue;
         _runSubscriberCallbacks('stateChange')
     }
 
-    function _runEffects(effects: TStateEvent<U, W>[], actionType: W[number] | symbol, data: Record<string, any> = {}) {
+    function _runEffects(effects: TStateEvent<V, W>[], actionType: W[number] | symbol, data: Record<string, any> = {}) {
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
@@ -126,11 +128,11 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runEntry(state: State<U, V, W>) {
-        _debugLogs('entry::', state.value)
+        const { stateJSON, stateEventsMap, value } = _getStateConfig(state);
+        _debugLogs('entry::', value)
         _internalState.value = 'entered'
-        _internalState.stateValue = state.value
+        _internalState.stateValue = value
         _setCurrentState(state)
-        const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const enteredJSON = stateJSON['##enter##'];
         if (!enteredJSON) {
             return _runAlways(state);
@@ -149,10 +151,11 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runAlways(state: State<U, V, W>) {
-        _debugLogs('always::', state.value)
+        const { value } = _getStateConfig(state)
+        _debugLogs('always::', value)
 
         _internalState.value = 'living';
-        _internalState.stateValue = state.value
+        _internalState.stateValue = value
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
         const alwaysJSONArr = Reflect.ownKeys(stateJSON)
             .filter(val => {
@@ -181,7 +184,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runService(state: State<U, V, W>) {
         _internalState.value = 'living';
-        _internalState.stateValue = state.value
+        const { value } = _getStateConfig(state)
+        _internalState.stateValue = value
 
         const { callback: service } = _getStateConfig(state);
         const cleanUpEffects = service(_context, send);
@@ -190,9 +194,10 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _runAsyncService(state: State<U, V, W>) {
-        _debugLogs('async::', state.value)
+        const { value } = _getStateConfig(state)
+        _debugLogs('async::', value)
         _internalState.value = 'living';
-        _internalState.stateValue = state.value;
+        _internalState.stateValue = value;
 
         const { asyncCallback: asyncService, stateJSON } = _getStateConfig(state);
         const onDoneActionEvent = Reflect.ownKeys(stateJSON)
@@ -204,13 +209,14 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                 _next(state, onErrorActionEvent)
             })
             .then((data: any) => {
-                _debugLogs('asyncServiceRun::', state.value, 'internalStateVal::', _internalState.stateValue)
+                _debugLogs('asyncServiceRun::', value, 'internalStateVal::', _internalState.stateValue)
                 _next(state, onDoneActionEvent, data)
             })
     }
 
     function _runAfter(state: State<U, V, W>) {
-        _debugLogs('after::', state.value)
+        const { value } = _getStateConfig(state)
+        _debugLogs('after::', value)
         _internalState.value = 'living'
         const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
         const afterJSON = stateJSON['##after##'];
@@ -236,7 +242,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runMasterActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
         _internalState.value = 'living'
-        _debugLogs('master active listener::', state.value, 'act::', actionType)
+        const { value } = _getStateConfig(state)
+        _debugLogs('master active listener::', value, 'act::', actionType)
         const flag = _validate(state);
         if (!flag) {
             _debugLogs('::invalidated::')
@@ -264,7 +271,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
         _internalState.value = 'living'
-        _debugLogs('active listener::', state.value, 'act::', actionType)
+        const { value } = _getStateConfig(state)
+        _debugLogs('active listener::', value, 'act::', actionType)
         const flag = _validate(state);
         if (!flag) {
             _debugLogs('::invalidated::')
@@ -289,7 +297,8 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
         _internalState.value = 'exited';
-        _debugLogs('exit::', state.value)
+        const { value } = _getStateConfig(state)
+        _debugLogs('exit::', value)
         _debugLogs('::------::')
         _runCleanupEffects()
         const { stateJSON, stateEventsMap } = _getStateConfig(state);
@@ -316,11 +325,13 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
     }
 
     function _validate(state: State<U, V, W>) {
-        return (state.value === currentState.value)
+        const { value } = _getStateConfig(state)
+        return (value === currentState.value)
     }
 
     function _next(nextState: State<U, V, W>, actionType: string | symbol = '', actionData: Record<string, any> = {}) {
-        _debugLogs('next::', nextState.value, "act::", actionType)
+        const { value: nextStateValue } = _getStateConfig(nextState)
+        _debugLogs('next::', nextStateValue, "act::", actionType)
         if (_internalState.value === 'dead') {
             _setIsStarted(true)
             return _runEntry(nextState)
@@ -367,7 +378,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
         return () => prop;
     }
 
-    function _refineActionName(action: string, delay: number | TAfterCallback<U>) {
+    function _refineActionName(action: string, delay: number | TAfterCallback<V>) {
         let refinedActionName = action.split('#')
             .join('')
         if (refinedActionName === 'after') {
@@ -384,7 +395,7 @@ export function createMachine<U extends TDefaultContext, V extends TDefaultState
                 [*] --> ${initialStateValue} 
         `
         for (const state in states) {
-            const _state: V[number] = state;
+            const _state: U[number] = state;
             const { stateJSON, delay } = _getStateConfig(states[_state]);
             const combinedJSON = { ...stateJSON, ...masterStateJSON }
             Reflect.ownKeys(combinedJSON)
