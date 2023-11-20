@@ -40,7 +40,6 @@ debounceMachine.on('updateTodoValue')
 debouncing.after(context => context.delay)
     .moveTo('fetching')
 
-
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
