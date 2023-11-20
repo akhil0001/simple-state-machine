@@ -4,7 +4,7 @@ import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
 
 type TStates<T extends readonly string[], IContext, IEvents extends IDefaultEvent> = {
-    [TIndex in T[number]as string]: State<T, IContext, IEvents>
+    [TIndex in T[number]]: State<T, IContext, IEvents>
 }
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -30,7 +30,7 @@ const returnTrue = () => true;
 export function createEvents<T extends readonly string[]>(...args: T) {
     return args
 }
-export class MachineConfig<IStates extends TDefaultStates, IContext extends TDefaultContext, IEvents extends readonly string[]> {
+export class MachineConfig<IStates extends TDefaultStates, IContext extends TDefaultContext, IEvents extends IDefaultEvent> {
     #states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     #context: IContext;
     #stateJSON: TStateJSON<IContext, IStates> = {};
