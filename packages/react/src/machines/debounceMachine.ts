@@ -10,17 +10,19 @@ const events = createEvents('updateInput')
 
 export const debounceMachine = new MachineConfig(states, { response: eitherOr({ id: 0, description: 0 }, {}), input: 0 }, events)
 
-const { debouncing, fetching } = debounceMachine.getStates()
+const { idle, debouncing, fetching } = debounceMachine.getStates()
 
-debounceMachine.on('updateInput').moveTo('debouncing').updateContext((context, event) => ({ ...context, input: event.data.input }))
+idle.on('updateInput').updateContext((context, event) => ({ ...context, input: event.data.input }))
+idle.on('updateInput').moveTo('debouncing')
 
 debouncing.after(500).moveTo('fetching')
+debouncing.on('updateInput').updateContext((context, event) => ({ ...context, input: event.data.input }))
+debouncing.on('updateInput').moveTo('debouncing')
 
-const { onDone, onError } = fetching.invokeAsyncCallback((context) => fetch('https://jsonplaceholder.typicode.com/todos/' + context.input))
+fetching.on('updateInput').moveTo('debouncing').updateContext((context, event) => ({ ...context, input: event.data.input }))
 
-onDone().moveTo('idle').fireAndForget((_, event) => console.log(event)).updateContext((context, event) => ({
+fetching.invokeAsyncCallback((context) => fetch('https://jsonplaceholder.typicode.com/todos/' + context.input)).onDone().moveTo('idle').fireAndForget((_, event) => console.log(event)).updateContext((context, event) => ({
     ...context,
     response: event.data
 }))
-onError().moveTo('error').updateContext(context => ({ ...context, response: {} }))
 
