@@ -45,24 +45,30 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         this.#stateJSON[actionType] = { ...prev, ...payload }
     }
 
+    #commonLogic(actionType: IEvents[number] | symbol) {
+        const stateEvent = new StateEvent<IContext, IEvents>()
+        this.#stateEventsMap.set(actionType, stateEvent);
+        const stateJSONPayload = {
+            target: this.#value,
+            isSetByDefault: true,
+            cond: returnTrue
+        }
+        this.#stateJSON[actionType] = stateJSONPayload
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
+        const action = new Action(actionType, boundUpdateStateJSON, stateEvent, stateJSONPayload);
+        const returnActions = action.returnStateEventActions()
+        const boundMoveTo = action.moveTo.bind(action)
+        const boundIf = action.if.bind(action)
+        return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
+    }
+
     #onDone(): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const stateEvent = new StateEvent<IContext, IEvents>()
-        const actionType = Symbol('##onDone##');
-        this.#stateEventsMap.set(actionType, stateEvent);
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            isSetByDefault: true,
-            cond: returnTrue
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
-        const returnActions = action.returnStateEventActions()
-        const boundMoveTo = action.moveTo.bind(action)
-        return { moveTo: boundMoveTo, ...returnActions }
+        const { moveTo, fireAndForget, updateContext } = this.#commonLogic(Symbol('##onDone##'))
+        return { moveTo, fireAndForget, updateContext }
     }
 
     #onError(): {
@@ -70,19 +76,8 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const stateEvent = new StateEvent<IContext, IEvents>()
-        const actionType = Symbol('##onError##');
-        this.#stateEventsMap.set(actionType, stateEvent);
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            isSetByDefault: true,
-            cond: returnTrue
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
-        const returnActions = action.returnStateEventActions()
-        const boundMoveTo = action.moveTo.bind(action)
-        return { moveTo: boundMoveTo, ...returnActions }
+        const { moveTo, fireAndForget, updateContext } = this.#commonLogic(Symbol('##onError##'))
+        return { moveTo, fireAndForget, updateContext }
     }
 
     on(actionType: IEvents[number]): {
@@ -91,36 +86,15 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            cond: returnTrue,
-            isSetByDefault: true
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
-        this.#stateEventsMap.set(actionType, stateEvent);
-        const returnActions = action.returnStateEventActions()
-        const boundIf = action.if.bind(action)
-        const boundMoveTo = action.moveTo.bind(action)
-        return { moveTo: boundMoveTo, if: boundIf, ...returnActions }
+        const { moveTo, fireAndForget, updateContext, if: If } = this.#commonLogic(actionType)
+        return { moveTo, fireAndForget, updateContext, if: If }
     }
     onEnter(): {
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const actionType = '##enter##'
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateEventsMap.set(actionType, stateEvent);
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            isSetByDefault: true,
-            cond: returnTrue
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
-        const returnActions = action.returnStateEventActions()
-        return { ...returnActions };
+        const { fireAndForget, updateContext } = this.#commonLogic(Symbol('##enter##'))
+        return { fireAndForget, updateContext }
     }
     always(): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
@@ -128,37 +102,15 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const actionType = Symbol('##always##');
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateEventsMap.set(actionType, stateEvent);
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            isSetByDefault: true,
-            cond: returnTrue
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
-        const returnActions = action.returnStateEventActions();
-        const boundIf = action.if.bind(action);
-        const boundMoveTo = action.moveTo.bind(action)
-        return { ...returnActions, if: boundIf, moveTo: boundMoveTo }
+        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic(Symbol('##always##'))
+        return { moveTo, if: If, fireAndForget, updateContext }
     }
     onExit(): {
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const actionType = '##exit##';
-        const stateEvent = new StateEvent<IContext, IEvents>();
-        this.#stateEventsMap.set(actionType, stateEvent);
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            cond: returnTrue,
-            isSetByDefault: true
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent);
-        const returnActions = action.returnStateEventActions();
-        return { ...returnActions }
+        const { fireAndForget, updateContext } = this.#commonLogic(Symbol('##exit##'))
+        return { fireAndForget, updateContext }
     }
     after(time: number | TAfterCallback<IContext>): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
@@ -167,20 +119,8 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
         this.#delay = time;
-        const actionType = '##after##';
-        const stateEvent = new StateEvent<IContext, IEvents>()
-        this.#stateEventsMap.set(actionType, stateEvent)
-        this.#stateJSON[actionType] = {
-            target: this.#value,
-            cond: returnTrue,
-            isSetByDefault: true
-        }
-        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent)
-        const returnActions = action.returnStateEventActions()
-        const boundMoveTo = action.moveTo.bind(action)
-        const boundIf = action.if.bind(action)
-        return { ...returnActions, moveTo: boundMoveTo, if: boundIf }
+        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic(Symbol('##after##'))
+        return { moveTo, if: If, fireAndForget, updateContext }
     }
     getConfig() {
         return {
