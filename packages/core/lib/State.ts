@@ -8,15 +8,15 @@ type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
 }
 
-type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<AllStates>;
+type TTargetState<IStates extends readonly string[]> = keyof TConvertArrToObj<IStates>;
 
 type TCond<IContext> = (context: IContext) => boolean;
 
 type TActionType = string | symbol;
 
-type TStateJSON<IContext, AllStates extends readonly string[]> = {
+type TStateJSON<IContext, IStates extends readonly string[]> = {
     [key: TActionType]: {
-        target: TTargetState<AllStates>,
+        target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
     }
@@ -24,9 +24,9 @@ type TStateJSON<IContext, AllStates extends readonly string[]> = {
 
 const returnTrue = () => true;
 
-export class State<AllStates extends readonly string[], IContext, IEvents extends readonly string[]> {
+export class State<IStates extends readonly string[], IContext, IEvents extends readonly string[]> {
     #value: string = '';
-    #stateJSON: TStateJSON<IContext, AllStates> = {}
+    #stateJSON: TStateJSON<IContext, IStates> = {}
     #stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
     #callback: TCallback<IContext, IEvents> = () => () => { };
     #asyncCallback: TAsyncCallback<IContext> = () => new Promise(res => res(null));
@@ -37,7 +37,7 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
 
     #updateStateJSON(actionType: TActionType, payload: Partial<{
-        target: TTargetState<AllStates>,
+        target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
     }>) {
@@ -46,7 +46,7 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
 
     #onDone(): {
-        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
@@ -66,7 +66,7 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
 
     #onError(): {
-        moveTo: TMoveTo<IContext, AllStates, IEvents>,
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
@@ -86,8 +86,8 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
 
     on(actionType: IEvents[number]): {
-        moveTo: TMoveTo<IContext, AllStates, IEvents>,
-        if: TIf<IContext, AllStates, IEvents>
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
@@ -123,8 +123,8 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
         return { ...returnActions };
     }
     always(): {
-        moveTo: TMoveTo<IContext, AllStates, IEvents>,
-        if: TIf<IContext, AllStates, IEvents>
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
@@ -161,8 +161,8 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
         return { ...returnActions }
     }
     after(time: number | TAfterCallback<IContext>): {
-        moveTo: TMoveTo<IContext, AllStates, IEvents>,
-        if: TIf<IContext, AllStates, IEvents>
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
@@ -194,8 +194,8 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
     invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void): {
         on: (actionType: IEvents[number]) => {
-            moveTo: TMoveTo<IContext, AllStates, IEvents>,
-            if: TIf<IContext, AllStates, IEvents>
+            moveTo: TMoveTo<IContext, IStates, IEvents>,
+            if: TIf<IContext, IStates, IEvents>
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
             updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
         }
@@ -206,12 +206,12 @@ export class State<AllStates extends readonly string[], IContext, IEvents extend
     }
     invokeAsyncCallback(callback: TAsyncCallback<IContext>): {
         onDone: () => {
-            moveTo: TMoveTo<IContext, AllStates, IEvents>,
+            moveTo: TMoveTo<IContext, IStates, IEvents>,
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
             updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
         },
         onError: () => {
-            moveTo: TMoveTo<IContext, AllStates, IEvents>,
+            moveTo: TMoveTo<IContext, IStates, IEvents>,
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
             updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
         }
