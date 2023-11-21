@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { counterMachine } from './machines/counterMachine'
 import { Debounce } from './components/Debounce'
+import { Throttle } from './components/Throttle'
 
 function App() {
   const { state, send } = useMachine(counterMachine)
@@ -33,6 +34,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
       <Debounce />
+      <Throttle />
     </>
   )
 }

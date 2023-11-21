@@ -14,6 +14,7 @@ export const Debounce = () => {
 
     return (
         <div style={{ display: 'flex', flexFlow: "column" }}>
+            <h1>Debounce</h1>
             <input type="number" onChange={onChange} value={state.context.input} />
             <p>State: {state.value}</p>
         </div>
