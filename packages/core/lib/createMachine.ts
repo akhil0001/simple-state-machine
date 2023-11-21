@@ -292,7 +292,6 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         }
         const { stateJSON } = _getStateConfig(state);
         const eventJSONArr = _findObjThatMatchDescription(actionType, stateJSON)
-        console.log(eventJSONArr, actionType)
         if (eventJSONArr.length === 0) {
             return;
         }
