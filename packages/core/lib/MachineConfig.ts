@@ -1,4 +1,4 @@
-import { Action, TIf, TMoveTo } from "./Action";
+import { Action, TIf, TMoveTo, TStateJSONPayload } from "./Action";
 import { State } from "./State";
 import { StateEvent } from "./StateEvent";
 import { IDefaultEvent, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
@@ -17,13 +17,9 @@ type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<
 
 type TActionType = string | symbol;
 
-type TStateJSON<IContext, IStates extends readonly string[]> = {
-    [key: TActionType]: {
-        target: TTargetState<IStates>,
-        cond: TCond<IContext>,
-        isSetByDefault: boolean
-    }
-}
+type TStatesJSON<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = {
+    [key in IEvents[number] | symbol]: Array<TStateJSONPayload<IContext, IStates>>;
+};
 
 const returnTrue = () => true;
 
@@ -33,7 +29,7 @@ export function createEvents<T extends readonly string[]>(...args: T) {
 export class MachineConfig<IStates extends TDefaultStates, IContext extends TDefaultContext, IEvents extends IDefaultEvent> {
     #states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     #context: IContext;
-    #stateJSON: TStateJSON<IContext, IStates> = {};
+    #stateJSON: TStatesJSON<IContext, IStates, IEvents> = {} as TStatesJSON<IContext, IStates, IEvents>;
     #stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
     #actions: IEvents;
 
@@ -56,13 +52,13 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         return this.#states
     }
 
-    #updateStateJSON(actionType: TActionType, payload: Partial<{
+    #updateStateJSON(actionType: IEvents[number] | symbol, payload: {
         target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
-    }>) {
+    }) {
         const prev = this.#stateJSON[actionType];
-        this.#stateJSON[actionType] = { ...prev, ...payload }
+        this.#stateJSON[actionType] = [...prev, payload]
     }
 
 
@@ -73,13 +69,19 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
         const stateEvent = new StateEvent<IContext, IEvents>()
-        this.#stateJSON[actionType] = {
+        const newStateJSONPayload: TStateJSONPayload<IContext, IStates> = {
             cond: returnTrue,
             isSetByDefault: true,
             target: '##notYetDeclared##'
         }
+        if (Object.keys(this.#stateJSON).includes(actionType)) {
+            this.#stateJSON[actionType].push(newStateJSONPayload)
+        }
+        else {
+            this.#stateJSON[actionType] = [newStateJSONPayload]
+        }
         const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
-        const action = new Action<IContext, IStates, IEvents>(actionType, boundUpdateStateJSON, stateEvent)
+        const action = new Action<IContext, IStates, IEvents>(actionType, boundUpdateStateJSON, stateEvent, newStateJSONPayload)
         this.#stateEventsMap.set(actionType, stateEvent);
         const returnActions = action.returnStateEventActions()
         const boundIf = action.if.bind(action);
