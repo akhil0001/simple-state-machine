@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Action, TIf, TMoveTo } from "./Action";
 import { StateEvent } from "./StateEvent";
-import { TAfterCallback, TAsyncCallback, TCallback, TSendBack, TStateEventCallback } from "./types";
+import { IDefaultEvent, TAfterCallback, TAsyncCallback, TCallback, TSendBack, TStateEventCallback } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -12,50 +12,46 @@ type TTargetState<IStates extends readonly string[]> = keyof TConvertArrToObj<IS
 
 type TCond<IContext> = (context: IContext) => boolean;
 
-type TActionType = string | symbol;
 
-type TStateJSON<IContext, IStates extends readonly string[]> = {
-    [key: TActionType]: {
+export type TStateJSON<IContext, IStates extends readonly string[], IEvents extends IDefaultEvent> = {
+    [key: symbol]: Array<{
         target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
-    }
+        event: StateEvent<IContext, IEvents>
+        delay?: number | TAfterCallback<IContext>
+    }>
 }
 
-const returnTrue = () => true;
 
 export class State<IStates extends readonly string[], IContext, IEvents extends readonly string[]> {
     #value: string = '';
-    #stateJSON: TStateJSON<IContext, IStates> = {}
-    #stateEventsMap: Map<TActionType, StateEvent<IContext, IEvents>> = new Map();
+    #stateJSON: TStateJSON<IContext, IStates, IEvents> = {}
     #callback: TCallback<IContext, IEvents> = () => () => { };
     #asyncCallback: TAsyncCallback<IContext> = () => new Promise(res => res(null));
-    #delay: number | TAfterCallback<IContext> = 0;
 
     constructor(val: string) {
         this.#value = val;
     }
 
-    #updateStateJSON(actionType: TActionType, payload: Partial<{
+    #updateStateJSON(actionType: symbol, payload: {
         target: TTargetState<IStates>,
         cond: TCond<IContext>,
-        isSetByDefault: boolean
-    }>) {
-        const prev = this.#stateJSON[actionType];
-        this.#stateJSON[actionType] = { ...prev, ...payload }
+        isSetByDefault: boolean,
+        event: StateEvent<IContext, IEvents>
+    }) {
+        const prev = this.#stateJSON[actionType][0] ?? {};
+        this.#stateJSON[actionType] = [{ ...prev, ...payload }]
     }
 
-    #commonLogic(actionType: IEvents[number] | symbol) {
-        const stateEvent = new StateEvent<IContext, IEvents>()
-        this.#stateEventsMap.set(actionType, stateEvent);
-        const stateJSONPayload = {
-            target: this.#value,
-            isSetByDefault: true,
-            cond: returnTrue
-        }
-        this.#stateJSON[actionType] = stateJSONPayload
+    #commonLogic(actionType: IEvents[number], delay: number | TAfterCallback<IContext> = 0): {
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>,
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
+    } {
         const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
-        const action = new Action(actionType, boundUpdateStateJSON, stateEvent, stateJSONPayload);
+        const action = new Action<IContext, IStates, IEvents>(actionType, this.#value, boundUpdateStateJSON, delay);
         const returnActions = action.returnStateEventActions()
         const boundMoveTo = action.moveTo.bind(action)
         const boundIf = action.if.bind(action)
@@ -67,7 +63,7 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const { moveTo, fireAndForget, updateContext } = this.#commonLogic(Symbol('##onDone##'))
+        const { moveTo, fireAndForget, updateContext } = this.#commonLogic('##onDone##')
         return { moveTo, fireAndForget, updateContext }
     }
 
@@ -76,7 +72,7 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const { moveTo, fireAndForget, updateContext } = this.#commonLogic(Symbol('##onError##'))
+        const { moveTo, fireAndForget, updateContext } = this.#commonLogic('##onError##')
         return { moveTo, fireAndForget, updateContext }
     }
 
@@ -93,7 +89,7 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const { fireAndForget, updateContext } = this.#commonLogic(Symbol('##enter##'))
+        const { fireAndForget, updateContext } = this.#commonLogic('##enter##')
         return { fireAndForget, updateContext }
     }
     always(): {
@@ -102,14 +98,14 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic(Symbol('##always##'))
+        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic('##always##')
         return { moveTo, if: If, fireAndForget, updateContext }
     }
     onExit(): {
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        const { fireAndForget, updateContext } = this.#commonLogic(Symbol('##exit##'))
+        const { fireAndForget, updateContext } = this.#commonLogic('##exit##')
         return { fireAndForget, updateContext }
     }
     after(time: number | TAfterCallback<IContext>): {
@@ -118,16 +114,13 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
         updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>
     } {
-        this.#delay = time;
-        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic(Symbol('##after##'))
+        const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic('##after##', time)
         return { moveTo, if: If, fireAndForget, updateContext }
     }
     getConfig() {
         return {
             callback: this.#callback,
             stateJSON: this.#stateJSON,
-            stateEventsMap: this.#stateEventsMap,
-            delay: this.#delay,
             asyncCallback: this.#asyncCallback,
             value: this.#value
         }
