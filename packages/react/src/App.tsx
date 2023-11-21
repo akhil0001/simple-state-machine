@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { counterMachine } from './machines/counterMachine'
+import { Debounce } from './components/Debounce'
 
 function App() {
   const { state, send } = useMachine(counterMachine)
@@ -31,6 +32,7 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <Debounce />
     </>
   )
 }
