@@ -32,9 +32,9 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
 }
 const { fetching, idle, debouncing } = debounceMachine.getStates()
 
-debounceMachine.on('updateTodoValue')
-    .moveTo('debouncing')
-    .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
+// debounceMachine.on('updateTodoValue')
+//     .moveTo('debouncing')
+//     .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
 
 debouncing.after(context => context.delay)
