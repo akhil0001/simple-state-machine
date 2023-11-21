@@ -40,7 +40,7 @@ export class State<IStates extends readonly string[], IContext, IEvents extends 
         isSetByDefault: boolean,
         event: StateEvent<IContext, IEvents>
     }) {
-        const prev = this.#stateJSON[actionType][0] ?? {};
+        const prev = this.#stateJSON[actionType]?.[0] ?? {};
         this.#stateJSON[actionType] = [{ ...prev, ...payload }]
     }
 
