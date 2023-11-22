@@ -20,7 +20,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:watch": "vite build --watch"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",
