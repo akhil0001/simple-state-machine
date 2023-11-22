@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { TStateJSONPayload } from "./Action";
 import { MachineConfig } from "./MachineConfig";
-import { State } from "./State";
+import { State, TStateJSON } from "./State";
 import { IDefaultEvent, TAfterCallback, TCurrentState, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
 
 // types
@@ -52,7 +53,7 @@ type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // functions
 export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V): TCreateMachineReturn<U, V, W> {
-    const { states, context: initialContext, stateEventsMap: masterStateEventsMap, stateJSON: masterStateJSON } = machineConfig.getConfig();
+    const { states, context: initialContext } = machineConfig.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
@@ -127,26 +128,39 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         console.log(...msgs);
     }
 
+    function _findObjThatMatchDescription(description: string, stateJSON: TStateJSON<V, U, W>) {
+        let result: TStateJSONPayload<V, U, W>[] = [];
+        Reflect.ownKeys(stateJSON).forEach(el => {
+            if (typeof el === 'symbol' && el.description === description) {
+                result.push(stateJSON[el] as unknown as TStateJSONPayload<V, U, W>)
+            }
+        })
+        return result.flat();
+    }
+
     function _runEntry(state: State<U, V, W>) {
-        const { stateJSON, stateEventsMap, value } = _getStateConfig(state);
+        const { stateJSON, value } = _getStateConfig(state);
         _debugLogs('entry::', value)
         _internalState.value = 'entered'
         _internalState.stateValue = value
         _setCurrentState(state)
-        const enteredJSON = stateJSON['##enter##'];
-        if (!enteredJSON) {
+        const enteredJSONArr = _findObjThatMatchDescription('##enter##', stateJSON)
+        if (enteredJSONArr.length === 0) {
             return _runAlways(state);
 
         }
-        const { target, cond } = enteredJSON;
-        if (cond(_context)) {
-            const effects = stateEventsMap.get('##enter##')?.stateEventCollection ?? [];
-            _runEffects(effects, '##enter##')
-            if (target !== currentState.value) {
-                const nextState = states[target]
-                return _runExit(state, nextState)
+        enteredJSONArr.forEach(enteredJSON => {
+            const { target, cond, event } = enteredJSON;
+            if (cond(_context)) {
+                const effects = event.stateEventCollection ?? [];
+                _runEffects(effects, '##enter##')
+                if (target !== currentState.value) {
+                    const nextState = states[target]
+                    return _runExit(state, nextState)
+                }
             }
-        }
+        })
+
         return _runAlways(state);
     }
 
@@ -156,21 +170,18 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
 
         _internalState.value = 'living';
         _internalState.stateValue = value
-        const { stateJSON, stateEventsMap } = _getStateConfig(state);
-        const alwaysJSONArr = Reflect.ownKeys(stateJSON)
-            .filter(val => {
-                return typeof val === 'symbol' && val.description === '##always##'
-            });
+        const { stateJSON } = _getStateConfig(state);
+        const alwaysJSONArr = _findObjThatMatchDescription('##always##', stateJSON)
 
         if (alwaysJSONArr.length === 0) {
             return _runService(state);
         }
 
-        alwaysJSONArr.every((event) => {
-            const { target, cond, isSetByDefault } = stateJSON[event];
+        alwaysJSONArr.forEach((alwaysJSON) => {
+            const { target, cond, isSetByDefault, event } = alwaysJSON;
             if (cond(_context)) {
-                const effects = stateEventsMap.get(event)?.stateEventCollection ?? [];
-                _runEffects(effects, event);
+                const effects = event.stateEventCollection ?? [];
+                _runEffects(effects, '##always##');
                 if (!isSetByDefault) {
                     const nextState = states[target];
                     return (_runExit(state, nextState), false);
@@ -199,18 +210,15 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         _internalState.value = 'living';
         _internalState.stateValue = value;
 
-        const { asyncCallback: asyncService, stateJSON } = _getStateConfig(state);
-        const onDoneActionEvent = Reflect.ownKeys(stateJSON)
-            .find(el => typeof el === 'symbol' && el.description === '##onDone##')
-        const onErrorActionEvent = Reflect.ownKeys(stateJSON)
-            .find(el => typeof el === 'symbol' && el.description === '##onError##')
+        const { asyncCallback: asyncService } = _getStateConfig(state);
+
         return asyncService(_context)
             .catch(() => {
-                _next(state, onErrorActionEvent)
+                _next(state, '##onError##')
             })
             .then((data: any) => {
                 _debugLogs('asyncServiceRun::', value, 'internalStateVal::', _internalState.stateValue)
-                _next(state, onDoneActionEvent, data)
+                _next(state, '##onDone##', data)
             })
     }
 
@@ -218,58 +226,62 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         const { value } = _getStateConfig(state)
         _debugLogs('after::', value)
         _internalState.value = 'living'
-        const { delay, stateEventsMap, stateJSON } = _getStateConfig(state);
-        const afterJSON = stateJSON['##after##'];
-        if (!afterJSON || !delay) {
-            return _runAsyncService(state)
+        const { stateJSON } = _getStateConfig(state);
+
+        const afterJSONArr = _findObjThatMatchDescription('##after##', stateJSON)
+
+        if (afterJSONArr.length === 0) {
+            return _runAsyncService(state);
         }
-        const { target, cond, isSetByDefault } = afterJSON;
-        if (cond(_context)) {
-            const effects = stateEventsMap.get('##after##')?.stateEventCollection ?? [];
-            const delayTime = typeof delay === 'function' ? delay(_context) : delay;
-            const _timerId = setTimeout(() => {
-                _runEffects(effects, '##after##')
-                if (!isSetByDefault) {
-                    const nextState = states[target]
-                    _runExit(state, nextState)
-                }
-            }, delayTime);
-            const cleanUpEffect = () => clearTimeout(_timerId)
-            _cleanUpEffectsQueue.push(cleanUpEffect)
-        }
+        afterJSONArr.forEach(afterJSON => {
+            const { target, cond, isSetByDefault, delay, event } = afterJSON;
+            if (cond(_context)) {
+                const effects = event.stateEventCollection ?? [];
+                const delayTime = typeof delay === 'function' ? delay(_context) : delay;
+                const _timerId = setTimeout(() => {
+                    _runEffects(effects, '##after##')
+                    if (!isSetByDefault) {
+                        const nextState = states[target]
+                        _runExit(state, nextState)
+                    }
+                }, delayTime);
+                const cleanUpEffect = () => clearTimeout(_timerId)
+                _cleanUpEffectsQueue.push(cleanUpEffect)
+            }
+        })
         return _runAsyncService(state)
     }
 
-    function _runMasterActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
-        _internalState.value = 'living'
-        const { value } = _getStateConfig(state)
-        _debugLogs('master active listener::', value, 'act::', actionType)
-        const flag = _validate(state);
-        if (!flag) {
-            _debugLogs('::invalidated::')
-            return;
-        }
-        // const { stateEventsMap, stateJSON } = _getStateConfig(state);
-        const eventJSON = masterStateJSON[actionType];
-        if (!eventJSON) {
-            return _runActiveListener(state, actionType, data);
-        }
-        const { target, cond, isSetByDefault } = eventJSON;
-        if (cond(_context)) {
-            const effects = masterStateEventsMap.get(actionType)?.stateEventCollection ?? [];
-            _runEffects(effects, actionType, data)
-            if (target === '##notYetDeclared##') {
-                return _runActiveListener(state, actionType, data)
-            }
-            const nextState = states[target]
-            if (!isSetByDefault) {
-                return _runExit(state, nextState)
-            }
-        }
-    }
+    // function _runMasterActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
+    //     _internalState.value = 'living'
+    //     const { value } = _getStateConfig(state)
+    //     _debugLogs('master active listener::', value, 'act::', actionType)
+    //     const flag = _validate(state);
+    //     if (!flag) {
+    //         _debugLogs('::invalidated::')
+    //         return;
+    //     }
+    //     // const { stateEventsMap, stateJSON } = _getStateConfig(state);
+    //     const eventJSON = masterStateJSON[actionType];
+    //     if (!eventJSON) {
+    //         return _runActiveListener(state, actionType, data);
+    //     }
+    //     const { target, cond, isSetByDefault } = eventJSON;
+    //     if (cond(_context)) {
+    //         const effects = masterStateEventsMap.get(actionType)?.stateEventCollection ?? [];
+    //         _runEffects(effects, actionType, data)
+    //         if (target === '##notYetDeclared##') {
+    //             return _runActiveListener(state, actionType, data)
+    //         }
+    //         const nextState = states[target]
+    //         if (!isSetByDefault) {
+    //             return _runExit(state, nextState)
+    //         }
+    //     }
+    // }
 
 
-    function _runActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
+    function _runActiveListener(state: State<U, V, W>, actionType: string, data: Record<string, any>) {
         _internalState.value = 'living'
         const { value } = _getStateConfig(state)
         _debugLogs('active listener::', value, 'act::', actionType)
@@ -278,21 +290,23 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             _debugLogs('::invalidated::')
             return;
         }
-        const { stateEventsMap, stateJSON } = _getStateConfig(state);
-        const eventJSON = stateJSON[actionType];
-        if (!eventJSON) {
+        const { stateJSON } = _getStateConfig(state);
+        const eventJSONArr = _findObjThatMatchDescription(actionType, stateJSON)
+        if (eventJSONArr.length === 0) {
             return;
         }
-        const { target, cond, isSetByDefault } = eventJSON;
-        if (cond(_context)) {
-            const effects = stateEventsMap.get(actionType)?.stateEventCollection ?? [];
-            _debugLogs('effects::', effects, 'act::', actionType)
-            _runEffects(effects, actionType, data)
-            const nextState = states[target]
-            if (!isSetByDefault) {
-                return _runExit(state, nextState)
+        eventJSONArr.forEach(eventJSON => {
+            const { target, cond, isSetByDefault, event } = eventJSON;
+            if (cond(_context)) {
+                const effects = event.stateEventCollection ?? [];
+                _debugLogs('effects::', effects, 'act::', actionType)
+                _runEffects(effects, actionType, data)
+                const nextState = states[target]
+                if (!isSetByDefault) {
+                    return _runExit(state, nextState)
+                }
             }
-        }
+        })
     }
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
@@ -301,14 +315,18 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         _debugLogs('exit::', value)
         _debugLogs('::------::')
         _runCleanupEffects()
-        const { stateJSON, stateEventsMap } = _getStateConfig(state);
-        const exitedJSON = stateJSON['##exit##'];
-        if (!exitedJSON) {
+        const { stateJSON } = _getStateConfig(state);
+        const exitJSONArr = _findObjThatMatchDescription('##exit##', stateJSON)
+
+        if (exitJSONArr.length === 0) {
             _next(nextState)
-            return
+            return;
         }
-        const effects = stateEventsMap.get('##exit##')?.stateEventCollection ?? [];
-        _runEffects(effects, '##exit##')
+
+        exitJSONArr.forEach(exitJSON => {
+            const effects = exitJSON.event.stateEventCollection ?? [];
+            _runEffects(effects, '##exit##')
+        })
         _next(nextState)
         return;
     }
@@ -329,7 +347,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         return (value === currentState.value)
     }
 
-    function _next(nextState: State<U, V, W>, actionType: string | symbol = '', actionData: Record<string, any> = {}) {
+    function _next(nextState: State<U, V, W>, actionType: string = '', actionData: Record<string, any> = {}) {
         const { value: nextStateValue } = _getStateConfig(nextState)
         _debugLogs('next::', nextStateValue, "act::", actionType)
         if (_internalState.value === 'dead') {
@@ -340,7 +358,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             return _runEntry(nextState)
         }
         else if (_internalState.value === 'living') {
-            return _runMasterActiveListener(nextState, actionType, actionData)
+            return _runActiveListener(nextState, actionType, actionData)
         }
     }
 
@@ -396,13 +414,14 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         `
         for (const state in states) {
             const _state: U[number] = state;
-            const { stateJSON, delay } = _getStateConfig(states[_state]);
-            const combinedJSON = { ...stateJSON, ...masterStateJSON }
+            const { stateJSON } = _getStateConfig(states[_state]);
+            const combinedJSON = { ...stateJSON }
             Reflect.ownKeys(combinedJSON)
                 .forEach(el => {
                     const actionName = typeof el === 'symbol' ? el.description ?? '' : el;
-                    const refinedActionName = _refineActionName(actionName, delay)
-                    const target = combinedJSON[el].target;
+                    const refinedActionName = _refineActionName(actionName, 0) // FIXME: get the actual delay param
+                    // const target = combinedJSON[el].target; //FIXME: get the actual target
+                    const target = ''
                     stateChartStr = `
                     ${stateChartStr}
                     ${state} --> ${target}: ${refinedActionName}

@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useMachine } from '../lib'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { counterMachine } from './machines/counterMachine'
+import { Debounce } from './components/Debounce'
+import { Throttle } from './components/Throttle'
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  const { state, send } = useMachine(counterMachine)
   return (
     <>
       <div>
@@ -18,16 +20,21 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <button onClick={() => send('increment')}>
+          count is {state.context.count}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+        <p>
+          State Value: {state.value}
         </p>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <Debounce />
+      <Throttle />
     </>
   )
 }
