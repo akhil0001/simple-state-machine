@@ -52,12 +52,12 @@ type TInternalState<V extends TDefaultStates> = {
 type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // functions
-export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V): TCreateMachineReturn<U, V, W> {
+export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V, debug: boolean = false): TCreateMachineReturn<U, V, W> {
     const { states, context: initialContext } = machineConfig.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
-    const _debug = false;
+    const _debug = debug;
     const currentState = {
         value: initialStateValue,
         history: initialStateValue,
