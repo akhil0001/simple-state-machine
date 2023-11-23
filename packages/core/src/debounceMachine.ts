@@ -1,4 +1,4 @@
-import { MachineConfig, TAsyncCallback, createStates } from "../lib";
+import { MachineConfig, TAsyncCallback, assign, createStates } from "../lib";
 import { createEvents } from "../lib/MachineConfig";
 
 
@@ -32,10 +32,8 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
 }
 const { fetching, idle, debouncing } = debounceMachine.getStates()
 
-// debounceMachine.on('updateTodoValue')
-//     .moveTo('debouncing')
-//     .updateContext((context, event) => ({ ...context, todoValue: event.data?.todoValue ?? context.todoValue }))
 
+idle.on('updateTodoValue').moveTo('debouncing').updateContext({ todoValue: (_, event) => event.data.todoValue })
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
@@ -43,7 +41,7 @@ debouncing.after(context => context.delay)
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
-    .updateContext((context, event) => ({ ...context, data: event.data?.response ?? null }))
+    .updateContext({ data: (_, event) => event.data.response })
     .fireAndForget(console.log)
 
 fetching.invokeAsyncCallback(fetchingUrl)
