@@ -1,10 +1,15 @@
-import { MachineConfig, createEvents, createStates } from "@simple-state-machine/core";
+import { MachineConfig, createEvents, createStates, createContext } from "@simple-state-machine/core";
 
+interface IContext {
+    count: number;
+    historyCount?: number
+    historyHistoryCount?: number
+}
 
 const events = createEvents('increment');
 const states = createStates('idle')
-export const counterMachine = new MachineConfig(states, {
-    count: 0
-}, events)
+const context: IContext = createContext({ count: 0 })
+export const counterMachine = new MachineConfig(states, context, events)
 
-counterMachine.getStates().idle.on("increment").updateContext((context) => ({ ...context, count: context.count + 1 }))
+counterMachine.getStates().idle.on("increment").updateContext((context) => ({ ...context, count: context.count + 1 })).updateContext({ historyHistoryCount: context => context.count })
+counterMachine.getStates().idle.on("increment").updateContext({ historyCount: context => context.count })

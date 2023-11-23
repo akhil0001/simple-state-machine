@@ -3,18 +3,21 @@ import {
   createMachine,
   createStates,
   createEvents,
+  createContext,
 } from "../lib";
 
 const machineStates = createStates("idle", "fething");
 
 const events = createEvents("fetching", "lol");
 
-const someMachine = new MachineConfig(machineStates, { count: 0 }, events);
+const context = createContext({ count: 0 });
+
+const someMachine = new MachineConfig(machineStates, context, events);
 
 const { idle, fething } = someMachine.getStates();
 
 idle.always().moveTo("fething");
-idle.on("fetching");
+idle.on("fetching").updateContext({ count: (context) => context.count + 1 });
 
 someMachine.on("fetching").moveTo("fething");
 
