@@ -1,8 +1,9 @@
-import { IDefaultEvent, TStateEvent, TStateEventCallback } from "./types";
+import { assign } from ".";
+import { IDefaultEvent, TAssignPayload, TDefaultContext, TStateEvent, TStateEventCallback } from "./types";
 
 
-type TStateEventCollection<IContext, IEvents extends IDefaultEvent> = TStateEvent<IContext, IEvents>[]
-export class StateEvent<IContext, IEvents extends IDefaultEvent> {
+type TStateEventCollection<IContext extends TDefaultContext, IEvents extends IDefaultEvent> = TStateEvent<IContext, IEvents>[]
+export class StateEvent<IContext extends TDefaultContext, IEvents extends IDefaultEvent> {
     stateEventCollection: TStateEventCollection<IContext, IEvents> = []
     #updateStateJSON: () => void;
     constructor(updateStateJSON: () => void) {
@@ -15,8 +16,9 @@ export class StateEvent<IContext, IEvents extends IDefaultEvent> {
         this.#updateStateJSON()
         return this
     }
-    updateContext(cb: TStateEventCallback<IContext, IEvents, IContext>) {
+    updateContext(payload: TAssignPayload<IContext, IEvents>) {
         const oldStateContextCollection = this.stateEventCollection;
+        const cb = assign(payload);
         this.stateEventCollection = [...oldStateContextCollection, { type: 'updateContext', callback: cb }]
         this.#updateStateJSON()
         return this
