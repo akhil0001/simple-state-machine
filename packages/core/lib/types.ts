@@ -8,7 +8,7 @@ export type TDefaultStates = readonly string[]
 
 export type IDefaultEvent = readonly string[];
 export type TEventPayload<IEvents extends IDefaultEvent> = { type: IEvents[number] | symbol, data: Record<string, any> }
-export type TStateEventCallback<IContext, IEvents extends IDefaultEvent, ReturnType> = (context: IContext, event: TEventPayload<IEvents>) => ReturnType;
+export type TStateEventCallback<IContext, IEvents extends IDefaultEvent, ReturnType> = (context: IContext, event: TEventPayload<IEvents>) => Partial<ReturnType>;
 
 export type TAssignPayload<IContext extends TDefaultContext, IEvents extends IDefaultEvent> = Partial<{
     [some in keyof IContext]: IContext[some] | ((context: IContext, payload: TEventPayload<IEvents>) => IContext[some])
