@@ -179,8 +179,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (alwaysJSONArr.length === 0) {
             return _runService(state);
         }
-
-        alwaysJSONArr.forEach((alwaysJSON) => {
+        // note: use every instead of forEach to break once always condition is met
+        alwaysJSONArr.every((alwaysJSON) => {
             const { target, cond, isSetByDefault, event } = alwaysJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
@@ -308,6 +308,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 internalContext = { ...internalContext, ...tempContext, }
                 const nextState = states[target]
                 if (!isSetByDefault) {
+                    _setContext(internalContext)
                     return _runExit(state, nextState)
                 }
             }
