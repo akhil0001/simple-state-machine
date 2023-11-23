@@ -20,7 +20,7 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => send('increment')}>
+        <button onClick={() => send('increment')} style={{ color: state.value === 'even' ? 'green' : 'red' }}>
           count is {state.context.count}
         </button>
         <p>

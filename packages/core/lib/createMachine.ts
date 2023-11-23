@@ -100,16 +100,19 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function _runEffects(effects: TStateEvent<V, W>[], actionType: W[number] | symbol, data: Record<string, any> = {}) {
+        let tempContext = {};
+        const currentContext = Object.freeze(_context)
         effects.forEach(effect => {
             const { type, callback } = effect;
             if (type === 'updateContext') {
-                const newContext = callback(_context, { type: actionType, data })
-                _setContext(newContext)
+                const newContext = callback(currentContext, { type: actionType, data })
+                tempContext = { ...tempContext, ...newContext }
             }
             if (type === 'fireAndForget') {
                 callback(_context, { type: actionType, data })
             }
         })
+        return tempContext;
     }
 
     function _runCleanupEffects() {
@@ -176,8 +179,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (alwaysJSONArr.length === 0) {
             return _runService(state);
         }
-
-        alwaysJSONArr.forEach((alwaysJSON) => {
+        // note: use every instead of forEach to break once always condition is met
+        alwaysJSONArr.every((alwaysJSON) => {
             const { target, cond, isSetByDefault, event } = alwaysJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
@@ -295,18 +298,22 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (eventJSONArr.length === 0) {
             return;
         }
+        let internalContext = _context;
         eventJSONArr.forEach(eventJSON => {
             const { target, cond, isSetByDefault, event } = eventJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
                 _debugLogs('effects::', effects, 'act::', actionType)
-                _runEffects(effects, actionType, data)
+                const tempContext = _runEffects(effects, actionType, data)
+                internalContext = { ...internalContext, ...tempContext, }
                 const nextState = states[target]
                 if (!isSetByDefault) {
+                    _setContext(internalContext)
                     return _runExit(state, nextState)
                 }
             }
         })
+        _setContext(internalContext)
     }
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
