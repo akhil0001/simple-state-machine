@@ -1,5 +1,5 @@
 import { assign } from ".";
-import { IDefaultEvent, TAssignPayload, TDefaultContext, TStateEvent, TStateEventCallback } from "./types";
+import { IDefaultEvent, TAssignPayload, TDefaultContext, TStateEvent, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 
 type TStateEventCollection<IContext extends TDefaultContext, IEvents extends IDefaultEvent> = TStateEvent<IContext, IEvents>[]
@@ -16,9 +16,9 @@ export class StateEvent<IContext extends TDefaultContext, IEvents extends IDefau
         this.#updateStateJSON()
         return this
     }
-    updateContext(payload: TAssignPayload<IContext, IEvents>) {
+    updateContext(payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) {
         const oldStateContextCollection = this.stateEventCollection;
-        const cb = assign(payload);
+        const cb = typeof payload === 'function' ? payload : assign(payload);
         this.stateEventCollection = [...oldStateContextCollection, { type: 'updateContext', callback: cb }]
         this.#updateStateJSON()
         return this

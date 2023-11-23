@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Action, TIf, TMoveTo } from "./Action";
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TSendBack, TStateEventCallback } from "./types";
+import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TSendBack, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
@@ -48,7 +48,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         if: TIf<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (cb: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (cb: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const boundUpdateStateJSON = this.#updateStateJSON.bind(this);
         const action = new Action<IContext, IStates, IEvents>(actionType, this.#value, boundUpdateStateJSON, delay);
@@ -61,7 +61,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
     #onDone(): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { moveTo, fireAndForget, updateContext } = this.#commonLogic('##onDone##')
         return { moveTo, fireAndForget, updateContext }
@@ -70,7 +70,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
     #onError(): {
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { moveTo, fireAndForget, updateContext } = this.#commonLogic('##onError##')
         return { moveTo, fireAndForget, updateContext }
@@ -80,14 +80,14 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { moveTo, fireAndForget, updateContext, if: If } = this.#commonLogic(actionType)
         return { moveTo, fireAndForget, updateContext, if: If }
     }
     onEnter(): {
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { fireAndForget, updateContext } = this.#commonLogic('##enter##')
         return { fireAndForget, updateContext }
@@ -96,14 +96,14 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic('##always##')
         return { moveTo, if: If, fireAndForget, updateContext }
     }
     onExit(): {
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { fireAndForget, updateContext } = this.#commonLogic('##exit##')
         return { fireAndForget, updateContext }
@@ -112,7 +112,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         moveTo: TMoveTo<IContext, IStates, IEvents>,
         if: TIf<IContext, IStates, IEvents>
         fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-        updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+        updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
     } {
         const { moveTo, if: If, fireAndForget, updateContext } = this.#commonLogic('##after##', time)
         return { moveTo, if: If, fireAndForget, updateContext }
@@ -130,7 +130,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
             moveTo: TMoveTo<IContext, IStates, IEvents>,
             if: TIf<IContext, IStates, IEvents>
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-            updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+            updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
         }
     } {
         this.#callback = callback;
@@ -141,12 +141,12 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         onDone: () => {
             moveTo: TMoveTo<IContext, IStates, IEvents>,
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-            updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+            updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
         },
         onError: () => {
             moveTo: TMoveTo<IContext, IStates, IEvents>,
             fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
-            updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>
+            updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
         }
     } {
         this.#asyncCallback = callback;

@@ -1,5 +1,5 @@
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TAfterCallback, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback } from "./types";
+import { IDefaultEvent, TAfterCallback, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
@@ -22,7 +22,7 @@ type TUpdateStateJSON<IContext extends TDefaultContext, IStates extends TDefault
 
 export type TReturnStateEventActions<IContext extends TDefaultContext, IEvents extends IDefaultEvent> = () => {
     fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>;
-    updateContext: (payload: TAssignPayload<IContext, IEvents>) => StateEvent<IContext, IEvents>;
+    updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>;
 }
 
 export type TMoveTo<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (target: TTargetState<IStates>) => ReturnType<TReturnStateEventActions<IContext, IEvents>>;
