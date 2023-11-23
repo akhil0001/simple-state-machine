@@ -20,8 +20,8 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => send('increment')}>
-          count is {state.context.count} and history is {state.context.historyCount} and hhcount is {state.context.historyHistoryCount}
+        <button onClick={() => send('increment')} style={{ color: state.value === 'even' ? 'green' : 'red' }}>
+          count is {state.context.count}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
