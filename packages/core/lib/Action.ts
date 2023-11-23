@@ -1,5 +1,5 @@
 import { StateEvent } from "./StateEvent";
-import { IDefaultEvent, TAfterCallback, TDefaultStates, TStateEventCallback } from "./types";
+import { IDefaultEvent, TAfterCallback, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 type TConvertArrToObj<TArr extends readonly string[]> = {
     [TIndex in TArr[number]]: TArr[number]
@@ -10,7 +10,7 @@ type TCond<IContext> = (context: IContext) => boolean;
 type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<AllStates>;
 
 
-export type TStateJSONPayload<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = {
+export type TStateJSONPayload<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = {
     target: TTargetState<IStates>,
     cond: TCond<IContext>,
     isSetByDefault: boolean;
@@ -18,21 +18,21 @@ export type TStateJSONPayload<IContext, IStates extends TDefaultStates, IEvents 
     delay: number | TAfterCallback<IContext>
 }
 
-type TUpdateStateJSON<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (actionType: symbol, payload: TStateJSONPayload<IContext, IStates, IEvents>) => void
+type TUpdateStateJSON<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (actionType: symbol, payload: TStateJSONPayload<IContext, IStates, IEvents>) => void
 
-export type TReturnStateEventActions<IContext, IEvents extends IDefaultEvent> = () => {
+export type TReturnStateEventActions<IContext extends TDefaultContext, IEvents extends IDefaultEvent> = () => {
     fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>;
-    updateContext: (cb: TStateEventCallback<IContext, IEvents, IContext>) => StateEvent<IContext, IEvents>;
+    updateContext: (payload: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>;
 }
 
-export type TMoveTo<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (target: TTargetState<IStates>) => ReturnType<TReturnStateEventActions<IContext, IEvents>>;
+export type TMoveTo<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (target: TTargetState<IStates>) => ReturnType<TReturnStateEventActions<IContext, IEvents>>;
 
-export type TIf<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (cond: TCond<IContext>) => {
+export type TIf<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = (cond: TCond<IContext>) => {
     moveTo: TMoveTo<IContext, IStates, IEvents>
 }
 
 const returnTrue = () => true;
-export class Action<IContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> {
+export class Action<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> {
 
     #actionType: symbol;
     #stateEvent: StateEvent<IContext, IEvents>;
