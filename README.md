@@ -4,7 +4,9 @@
 - If you are new to state machines, I would recommend to go through [statecharts.dev](https://statecharts.dev/what-is-a-state-machine.html). Its an amazing design pattern that helps developer to think about UI State problems with a new mental model. 
 
 ## Installation
-
+```
+   npm i @simple-state-machine/core
+```
 ## Quick galnce
 - A simplest state machine can be a "Light<>Dark" Mode toggling. On click of button is toggle from `light` to `dark` or vice versa.
 - State diagram looks something like this for it: ![toggle-sm](./docs/assets/toggle-sm.png)
