@@ -30,10 +30,14 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
         .then(res => res.json())
         .then(data => ({ response: data }))
 }
-const { fetching, idle, debouncing } = debounceMachine.getStates()
 
+const updateTodoValue = assign<IContext, typeof events>({
+    todoValue: (_, event) => event.data.todoValue
+})
 
-idle.on('updateTodoValue').moveTo('debouncing').updateContext({ todoValue: (_, event) => event.data.todoValue })
+const { fetching, debouncing } = debounceMachine.getStates()
+
+debounceMachine.on('updateTodoValue').moveTo('debouncing').updateContext(updateTodoValue)
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')

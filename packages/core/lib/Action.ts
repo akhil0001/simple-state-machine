@@ -1,13 +1,7 @@
 import { StateEvent } from "./StateEvent";
+import { TCond, TTargetState } from "./internalTypes";
 import { IDefaultEvent, TAfterCallback, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
-type TConvertArrToObj<TArr extends readonly string[]> = {
-    [TIndex in TArr[number]]: TArr[number]
-}
-
-type TCond<IContext> = (context: IContext) => boolean;
-
-type TTargetState<AllStates extends readonly string[]> = keyof TConvertArrToObj<AllStates>;
 
 
 export type TStateJSONPayload<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = {
@@ -39,7 +33,7 @@ export class Action<IContext extends TDefaultContext, IStates extends TDefaultSt
     #updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>
     #stateJSONPayload: TStateJSONPayload<IContext, IStates, IEvents>;
 
-    constructor(actionType: IEvents[number], currentState: IStates[number], updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>, delay: number | TAfterCallback<IContext>) {
+    constructor(actionType: IEvents[number], currentState: IStates[number], updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>, delay: number | TAfterCallback<IContext> = 0) {
         this.#actionType = Symbol(actionType);
         this.#updateStateJSON = updateStateJSON;
         const boundUpdateDefaultStateJSON = this.#updateDefaultStateJSON.bind(this)

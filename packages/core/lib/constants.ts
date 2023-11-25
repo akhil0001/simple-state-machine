@@ -1,0 +1,1 @@
+export const MACHINE_SUPER_STATE = '##machineSuperState##'
