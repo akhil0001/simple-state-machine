@@ -1,0 +1,15 @@
+{
+    "root": true,
+    "extends": ["eslint:recommended"],
+    "env": {
+        "browser": true,
+        "es2020": true
+    },
+    "parserOptions": {
+        "sourceType": "module"
+    },
+    "rules": {
+        "newline-per-chained-call": ["warn", { "ignoreChainWithDepth": 1}],
+        "indent": ["warn", 2, { "MemberExpression": 2 }]
+    }
+}

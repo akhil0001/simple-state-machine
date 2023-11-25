@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
+import eslint from 'vite-plugin-eslint'
 
 export default defineConfig({
     build: {
@@ -17,5 +18,5 @@ export default defineConfig({
         }
     },
     // https://stackoverflow.com/questions/71982849/how-do-i-add-types-to-a-vite-library-build
-    plugins: [dts({ rollupTypes: true })]
+    plugins: [eslint(), dts({ rollupTypes: true })]
 })
