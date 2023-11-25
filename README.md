@@ -38,7 +38,7 @@
       .updateContext(assign({response: (_, event) => event.data}))
 
    ```
-  - This library supports type safety and type intellisense makes writing state machine much easier than in the json format.
+- This library supports type safety and type intellisense makes writing state machine much easier than in the json format. So most of "API surface area" problem is solved by type sense supported by almost all editors.
 
 
 ## TODO (documentation)
