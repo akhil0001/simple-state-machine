@@ -1,6 +1,9 @@
-import { State } from "./State";
+import { Action, TIf, TMoveTo } from "./Action";
+import { State, TStateJSON } from "./State";
+import { StateEvent } from "./StateEvent";
 import { MACHINE_SUPER_STATE } from "./constants";
-import { IDefaultEvent, TDefaultContext, TDefaultStates } from "./types";
+import { TCond, TTargetState } from "./internalTypes";
+import { IDefaultEvent, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 type TStates<T extends readonly string[], IContext extends TDefaultContext, IEvents extends IDefaultEvent> = {
     [TIndex in T[number]]: State<T, IContext, IEvents>
@@ -13,6 +16,7 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
     #states: TStates<IStates, IContext, IEvents> = {} as TStates<IStates, IContext, IEvents>;
     #context: IContext;
     #actions: IEvents;
+    #stateJSON: TStateJSON<IContext, IStates, IEvents> = {}
 
     constructor(states: IStates, newContext: IContext, actions: IEvents) {
         const defaultState: readonly string[] = [MACHINE_SUPER_STATE]
@@ -31,6 +35,35 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
 
     getStates(): TStates<IStates, IContext, IEvents> {
         return this.#states
+    }
+
+    #updateStateJSON(actionType: symbol, payload: {
+        target: TTargetState<IStates>,
+        cond: TCond<IContext>,
+        isSetByDefault: boolean,
+        event: StateEvent<IContext, IEvents>
+    }) {
+        const prev = this.#stateJSON[actionType]?.[0] ?? {};
+        this.#stateJSON[actionType] = [{ ...prev, ...payload }]
+    }
+
+    on(actionType: IEvents[number]): {
+        moveTo: TMoveTo<IContext, IStates, IEvents>,
+        if: TIf<IContext, IStates, IEvents>,
+        fireAndForget: (cb: TStateEventCallback<IContext, IEvents, void>) => StateEvent<IContext, IEvents>,
+        updateContext: (cb: TAssignPayload<IContext, IEvents> | TUpdateContextEventCallback<IContext, IEvents>) => StateEvent<IContext, IEvents>
+    } {
+        const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
+        const action = new Action<IContext, IStates, IEvents>(actionType, MACHINE_SUPER_STATE, boundUpdateStateJSON);
+        const { moveTo, if: If, returnStateEventActions } = action;
+        const boundMoveTo = moveTo.bind(action);
+        const boundIf = If.bind(action);
+        const returnActions = returnStateEventActions();
+        return {
+            moveTo: boundMoveTo,
+            if: boundIf,
+            ...returnActions
+        }
     }
 
 
