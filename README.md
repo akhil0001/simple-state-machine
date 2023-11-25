@@ -1,27 +1,40 @@
-# React + TypeScript + Vite
+# simple-state-machine
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- Simple State Machine, as the name is self explanatory, is a typescript library that aims to make coding state machines simple, type-safe and fun. 
+- If you are new to state machines, I would recommend to go through [statecharts.dev](https://statecharts.dev/what-is-a-state-machine.html). Its an amazing design pattern that helps developer to think about UI State problems with a new mental model. 
 
-Currently, two official plugins are available:
+## Installation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Quick galnce
+- A simplest state machine can be a "Light<>Dark" Mode toggling. On click of button is toggle from `light` to `dark` or vice versa.
+- State diagram looks something like this for it: ![toggle-sm](./docs/assets/toggle-sm.png)
+- Now code for this machine using this library looks like this
+   ```js
+      import {createState, createEvents, createContext, MachineConfig} from 'simple-state-machine'
 
-## Expanding the ESLint configuration
+      const states = createStates('light', 'dark');
+      const events = createEvents('TOGGLE');
+      const context = createContext({});
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+      const ViewMachine = new MachineConfig(states, context, events);
+      const {light, dark} = ViewMachine.getStates();
+      
+      light.on('TOGGLE').moveTo('dark');
+      dark.on('TOGGLE').moveTo('light');
+   ```
 
-- Configure the top-level `parserOptions` property like this:
+## Examples
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
-```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Why, How and What ?
+
+- For anyone curious to understand these points 
+  - [Why ?](./docs/why.md)
+
+
+## TODO (documentation)
+
+- [ ] Need examples in javascript (Codesandbox)
+- [ ] Need examples in typescript (Codesandbox)
+- [ ] Need examples in react (Codesandbox)
+- [ ] Write a how doc and tag it in 3 questions (docs)

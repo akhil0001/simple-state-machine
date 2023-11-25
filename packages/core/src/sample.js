@@ -16,10 +16,13 @@ const someMachine = new MachineConfig(machineStates, context, events);
 
 const { idle, fething } = someMachine.getStates();
 
-idle.always().moveTo("fething");
-idle.on("fetching").updateContext({ count: (context) => context.count + 1 });
+idle.always()
+    .moveTo("fething");
+idle.on("fetching")
+    .updateContext({ count: (context) => context.count + 1 });
 
-someMachine.on("fetching").moveTo("fething");
+someMachine.on("fetching")
+    .moveTo("fething");
 
 const machine = createMachine(someMachine);
 
