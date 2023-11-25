@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Action, TIf, TMoveTo } from "./Action";
 import { StateEvent } from "./StateEvent";
-import { TTargetState } from "./internalTypes";
+import { TCond, TTargetState } from "./internalTypes";
 import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TSendBack, TStateEventCallback, TUpdateContextEventCallback } from "./types";
-
-type TCond<IContext> = (context: IContext) => boolean;
-
 
 export type TStateJSON<IContext extends TDefaultContext, IStates extends readonly string[], IEvents extends IDefaultEvent> = {
     [key: symbol]: Array<{

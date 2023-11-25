@@ -3,3 +3,5 @@ type TConvertArrToObj<TArr extends readonly string[]> = {
 }
 
 export type TTargetState<IStates extends readonly string[]> = keyof TConvertArrToObj<IStates>;
+
+export type TCond<IContext> = (context: IContext) => boolean;
