@@ -1,11 +1,12 @@
 {
   "name": "@simple-state-machine/core",
-  "private": true,
+  "author": {
+    "name": "Akhil Sai Ram Chennareddy"
+  },
   "version": "0.0.1",
   "type": "module",
   "files": [
-    "dist",
-    "lib"
+    "dist"
   ],
   "main": "./dist/simple-state-machine.umd.cjs",
   "module": "./dist/simple-state-machine.js",
@@ -29,5 +30,6 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vite-plugin-dts": "^3.6.3"
-  }
+  },
+  "license": "MIT"
 }
