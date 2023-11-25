@@ -6,9 +6,9 @@
 ## Installation
 
 ## Quick galnce
-- A simplest state machine can be a "Light<>Dark" Mode toggling. On click of button is toggle from light to dark or dark to light mode.
+- A simplest state machine can be a "Light<>Dark" Mode toggling. On click of button is toggle from `light` to `dark` or vice versa.
 - State diagram looks something like this for it: ![toggle-sm](./docs/assets/toggle-sm.png)
-- Now code for this using this library like this
+- Now code for this machine using this library looks like this
    ```js
       import {createState, createEvents, createContext, MachineConfig} from 'simple-state-machine'
 
@@ -20,7 +20,7 @@
       const {light, dark} = ViewMachine.getStates();
       
       light.on('TOGGLE').moveTo('dark');
-      dark.on('TOGGLE').moveTo('light')
+      dark.on('TOGGLE').moveTo('light');
    ```
 
 ## Examples
