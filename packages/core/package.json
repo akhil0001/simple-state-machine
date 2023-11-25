@@ -31,5 +31,8 @@
     "vite": "^4.4.5",
     "vite-plugin-dts": "^3.6.3"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
 }
