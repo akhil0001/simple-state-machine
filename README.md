@@ -16,15 +16,16 @@
       const events = createEvents('TOGGLE');
       const context = createContext({});
 
-      const ViewMachine = new MachineConfig(states, context, events);
-      const {light, dark} = ViewMachine.getStates();
+      const ThemeMachine = new MachineConfig(states, context, events);
+      const {light, dark} = ThemeMachine.getStates();
       
       light.on('TOGGLE').moveTo('dark');
       dark.on('TOGGLE').moveTo('light');
    ```
 
 ## Examples
-
+- [Toggle Theme Machine](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd)
+- 
 
 ## Why, How and What ?
 
