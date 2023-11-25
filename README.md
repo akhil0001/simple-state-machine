@@ -1,27 +1,48 @@
-# React + TypeScript + Vite
+# simple-state-machine
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- Simple State Machine, as the name is self explanatory, is a typescript library that aims to make coding state machines simple, type-safe and fun. 
+- If you are new to state machines, I would recommend to go through [statecharts.dev](https://statecharts.dev/what-is-a-state-machine.html). Its an amazing design pattern that helps developer to think about UI State problems with a new mental model. 
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Why?
 
-## Expanding the ESLint configuration
+- This library started as an exploratory project to create my own version of [Xstate](https://xstate.js.org/docs/), which I adore a lot, but also wanted to overcome some inconveniences that I had with it
+- One of those inconveniences is writing & maintaining state logic in json format. It always felt slightly tedious and mentioning the actions and services as strings in xstate felt bit out of place.
+- The way I look at the state machines is that each state explains the developer about its behaviour and what would happen when it gets a specific event. For example a button that fetches on click could be described as follows 
+  ```
+  // states
+  button stays in 2 states -> idle and loading
+  
+  // transitions
+  when in idle state, on click, button moves to loading state
+  when in loading state, invoke a fetch call. 
+  when done, move to the idle state and store the response
+  ```
+- The idea is that what if the state machine code looks exactly same like the above description. This library attempts to do that. StateMachine code with this library looks like this
+   ```js
+   const states = createStates('idle', 'loading');
+   const events = createEvents('CLICK')
+   const context = createContext({response: null}) 
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+   const fetchingMachine = new MachineConfig(states, context, events);
+   const {idle, loading} = fetchingMachine.getStates()
 
-- Configure the top-level `parserOptions` property like this:
+   idle
+      .on('CLICK')
+      .moveTo('loading');
+   
+   loading
+      .invokeAsyncCallback(() => fetch('https://jsonplaceholder.typicode.com/todos/'))
+      .onDone()
+      .moveTo('idle')
+      .updateContext(assign({response: (_, event) => event.data}))
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
-```
+   ```
+  - This library supports type safety and type intellisense makes writing state machine much easier than in the json format.
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+## TODO (documentation)
+
+- [ ] Need examples in javascript (Codesandbox)
+- [ ] Need examples in typescript (Codesandbox)
+- [ ] Need examples in react (Codesandbox)
