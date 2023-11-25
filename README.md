@@ -6,7 +6,7 @@
 
 ## Why?
 
-- This library started as an exploratory project to create my own version of [Xstate](https://xstate.js.org/docs/), which I adore a lot, but also wanted to overcome some inconveniences that I had with it
+- This library started as an exploratory project to create my own version of [XState](https://xstate.js.org/docs/), which I adore a lot, but also wanted to overcome some inconveniences that I had with it
 - One of those inconveniences is writing & maintaining state logic in json format. It always felt slightly tedious and mentioning the actions and services as strings in xstate felt bit out of place.
 - The way I look at the state machines is that each state explains the developer about its behaviour and what would happen when it gets a specific event. For example a button that fetches on click could be described as follows 
   ```
