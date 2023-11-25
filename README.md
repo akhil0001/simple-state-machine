@@ -26,7 +26,7 @@
 ## Examples
 
 
-## Why, How and What of the Implementation
+## Why, How and What ?
 
 - For anyone curious to understand these points 
   - [Why ?](./docs/why.md)
