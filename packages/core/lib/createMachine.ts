@@ -53,7 +53,7 @@ type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
 
 // functions
 export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V, debug: boolean = false): TCreateMachineReturn<U, V, W> {
-    const { states, context: initialContext } = machineConfig.getConfig();
+    const { states, context: initialContext, stateJSON: masterStateJSON } = machineConfig.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
@@ -255,33 +255,38 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         return _runAsyncService(state)
     }
 
-    // function _runMasterActiveListener(state: State<U, V, W>, actionType: string | symbol, data: Record<string, any>) {
-    //     _internalState.value = 'living'
-    //     const { value } = _getStateConfig(state)
-    //     _debugLogs('master active listener::', value, 'act::', actionType)
-    //     const flag = _validate(state);
-    //     if (!flag) {
-    //         _debugLogs('::invalidated::')
-    //         return;
-    //     }
-    //     // const { stateEventsMap, stateJSON } = _getStateConfig(state);
-    //     const eventJSON = masterStateJSON[actionType];
-    //     if (!eventJSON) {
-    //         return _runActiveListener(state, actionType, data);
-    //     }
-    //     const { target, cond, isSetByDefault } = eventJSON;
-    //     if (cond(_context)) {
-    //         const effects = masterStateEventsMap.get(actionType)?.stateEventCollection ?? [];
-    //         _runEffects(effects, actionType, data)
-    //         if (target === '##notYetDeclared##') {
-    //             return _runActiveListener(state, actionType, data)
-    //         }
-    //         const nextState = states[target]
-    //         if (!isSetByDefault) {
-    //             return _runExit(state, nextState)
-    //         }
-    //     }
-    // }
+    function _runMachineActiveListener(state: State<U, V, W>, actionType: string, data: Record<string, any>) {
+        _internalState.value = 'living';
+        const { value } = _getStateConfig(state)
+        _debugLogs('machine active listener::', value, 'act::', actionType);
+        const flag = _validate(state)
+        if (!flag) {
+            _debugLogs('::invalidated::');
+            return;
+        }
+        const eventJSONArr = _findObjThatMatchDescription(actionType, masterStateJSON);
+        if (eventJSONArr.length === 0) {
+            _debugLogs("machine active listener:: ", value, "no events mapped to masterState")
+            return _runActiveListener(state, actionType, data)
+        }
+        let internalContext = _context;
+        eventJSONArr.forEach(eventJSON => {
+            const { target, cond, isSetByDefault, event } = eventJSON;
+            if (cond(_context)) {
+                const effects = event.stateEventCollection ?? [];
+                _debugLogs('effects::', effects, 'act::', actionType)
+                const tempContext = _runEffects(effects, actionType, data)
+                internalContext = { ...internalContext, ...tempContext, }
+                const nextState = states[target]
+                if (!isSetByDefault) {
+                    _setContext(internalContext)
+                    return _runExit(state, nextState)
+                }
+            }
+        })
+        _setContext(internalContext)
+        return _runActiveListener(state, actionType, data)
+    }
 
 
     function _runActiveListener(state: State<U, V, W>, actionType: string, data: Record<string, any>) {
@@ -365,7 +370,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             return _runEntry(nextState)
         }
         else if (_internalState.value === 'living') {
-            return _runActiveListener(nextState, actionType, actionData)
+            return _runMachineActiveListener(nextState, actionType, actionData)
         }
     }
 
