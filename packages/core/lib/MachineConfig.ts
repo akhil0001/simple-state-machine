@@ -1,4 +1,5 @@
 import { State } from "./State";
+import { MACHINE_SUPER_STATE } from "./constants";
 import { IDefaultEvent, TDefaultContext, TDefaultStates } from "./types";
 
 type TStates<T extends readonly string[], IContext extends TDefaultContext, IEvents extends IDefaultEvent> = {
@@ -14,7 +15,7 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
     #actions: IEvents;
 
     constructor(states: IStates, newContext: IContext, actions: IEvents) {
-        const defaultState: readonly string[] = ['##notYetDeclared##']
+        const defaultState: readonly string[] = [MACHINE_SUPER_STATE]
         this.#context = { ...newContext ?? {} };
         this.#addStates<typeof states>(states.length > 0 ? states : defaultState as IStates)
         this.#actions = actions
