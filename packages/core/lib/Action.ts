@@ -33,7 +33,7 @@ export class Action<IContext extends TDefaultContext, IStates extends TDefaultSt
     #updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>
     #stateJSONPayload: TStateJSONPayload<IContext, IStates, IEvents>;
 
-    constructor(actionType: IEvents[number], currentState: IStates[number], updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>, delay: number | TAfterCallback<IContext>) {
+    constructor(actionType: IEvents[number], currentState: IStates[number], updateStateJSON: TUpdateStateJSON<IContext, IStates, IEvents>, delay: number | TAfterCallback<IContext> = 0) {
         this.#actionType = Symbol(actionType);
         this.#updateStateJSON = updateStateJSON;
         const boundUpdateDefaultStateJSON = this.#updateDefaultStateJSON.bind(this)
