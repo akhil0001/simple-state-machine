@@ -55,10 +55,10 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
     } {
         const boundUpdateStateJSON = this.#updateStateJSON.bind(this)
         const action = new Action<IContext, IStates, IEvents>(actionType, MACHINE_SUPER_STATE, boundUpdateStateJSON);
-        const { moveTo, if: If, returnStateEventActions } = action;
-        const boundMoveTo = moveTo.bind(action);
-        const boundIf = If.bind(action);
-        const returnActions = returnStateEventActions();
+
+        const boundMoveTo = action.moveTo.bind(action);
+        const boundIf = action.if.bind(action);
+        const returnActions = action.returnStateEventActions();
         return {
             moveTo: boundMoveTo,
             if: boundIf,
@@ -71,8 +71,9 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         const actions = this.#actions;
         const states = this.#states;
         const context = this.#context
+        const stateJSON = this.#stateJSON
         return {
-            states, context, actions
+            states, context, actions, stateJSON
         }
     }
 
