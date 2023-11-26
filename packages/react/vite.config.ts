@@ -4,9 +4,6 @@
 
 export default defineConfig({
     build: {
-        watch: {
-
-        },
         lib: {
             entry: resolve(__dirname, 'lib/index.ts'),
             name: 'index',
