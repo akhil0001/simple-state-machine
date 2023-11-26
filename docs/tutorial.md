@@ -1,12 +1,26 @@
 # Tutorial
 
-## Basics
+## React
+
+### Pre-requisites
+
+- Node.js >= 16.x
+- React >= 18
+
+### Installation
+- Run the following command to install the packages
+    ```
+    npm install @simple-state-machine/core @simple-state-machine/react
+    ```
+
+### Timer App
 
 ![Timer App Demo](assets/timer-app.png)
 - Lets make a simple timer app in javascript using state machine that looks something like this
 - So lets define the states first. There can be 2 states that timer app can be in
   - 1. Idle
   - 2. Running 
+- Create a file named `timerMachineConfig.js` and follow the below instructions
 - Lets code this
   ```js
     import {createStates} from '@simple-state-machine/core'
@@ -43,7 +57,7 @@
         const context = createContext({time: 0})
 
         // create machine config
-        const TimerMachineConfig = new MachineConfig(states, context, events)
+        export const TimerMachineConfig = new MachineConfig(states, context, events)
     ```
 - Think of `MachineConfig` as the toolkit which can provide you with all the necessary state machine functions that you need to write your business logic
 - Now that we have `TimerMachineConfig`, lets define transitions. 
@@ -86,32 +100,32 @@
 - If the above code is confusing, don't worry. We are asking `running` state to start timer for `1000ms` and after that move to the same state by decrementing time. So once the timer of `1000ms` is done, it decrements time by `1` and then goes back to same state and again runs timer and so on..., its basically a loop which can be only broken when user either clicks on either `PAUSE` or `STOP`, which in that case moves to `idle`
 
 - We have configured our `TimerMachineConfig` and we are left with using it in actual app.
-- Lets use it in the actual app
+- Lets use it in the actual app. Create a component named `Timer.jsx`
   
-  ```js
-    import {createMachine} from '@simple-state-machine/core'
+  ```jsx
+    import {useMachine} from '@simple-state-machine/react'
+    import {TimerMachineConfig} from './timerMachineConfig.ts';
 
-    const {start, subscribe, send} = createMachine(TimerMachineConfig);
+    export const Timer = () => {
+        const {state, send} = useMachine(TimerMachineConfig);
+        const {time} = state.context;
+        const isRunning = state.value === 'running'
+        
+        const updateTime = (e) => send({type: 'UPDATE_TIME', data: {time: e.currentTarget.value}});
+        const start = () => send('START')
+        const pause = () => send('PAUSE');
+        const stop = () => send('STOP')
 
-    const startBtn = document.querySelector('.start-btn');
-    const pauseBtn = document.querySelector('.pause-btn');
-    const stopBtn = document.querySelector('.stop-btn');
-    const timerInput = document.querySelector('.timer-input');
-    const timerDisplay = document.querySelector('.timer-display')
-
-    startBtn.addEventListener('click', () => send('START'));
-    pauseBtn.addEventListener('click', () => send('PAUSE'));
-    stopBtn.addEventListener('click', () => send('STOP'));
-    timerInput.addEventListener('input', (e) => send({
-        type: 'UPDATE_TIME',
-        data: {
-            time: e.currentTarget.value
-        }
-    }));
-
-    subscribe('allChanges',(state) => {
-        timerDisplay.innerText = state.context.time;
-    });
-
-    start();
+        return (
+            <>
+                <h1>{time}</h1>
+                <input type="number" disabled={isRunning} value={time} onChange={updateTime} />
+                <button disabled={isRunning} onClick={start}>Start</button>
+                <button disabled={!isRunning} onClick={pause}>Pause</button>
+                <button disabled={!isRunning} onClick={stop}>Stop</button>
+            </>
+        )
+    }
+   
   ```
+- With this code in place, we have deflected one of the most dangerous hooks in react `useEffect` and yet achieved the timer app
