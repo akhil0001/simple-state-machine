@@ -6,8 +6,8 @@ export default defineConfig({
     build: {
         lib: {
             entry: resolve(__dirname, 'lib/index.ts'),
-            name: 'index',
-            fileName: 'index',
+            name: 'simpleStateMachineReact',
+            fileName: 'simple-state-machine-react',
         },
         rollupOptions: {
             external: ['react'],
