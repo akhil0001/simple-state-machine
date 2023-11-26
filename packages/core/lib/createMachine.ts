@@ -152,18 +152,21 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             return _runAlways(state);
 
         }
+        let internalContext = _context;
         enteredJSONArr.forEach(enteredJSON => {
             const { target, cond, event } = enteredJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
-                _runEffects(effects, '##enter##')
+                const tempContext = _runEffects(effects, '##enter##');
+                internalContext = {...internalContext, ...tempContext}
                 if (target !== currentState.value) {
-                    const nextState = states[target]
+                    const nextState = states[target];
+                    _setContext(internalContext)
                     return _runExit(state, nextState)
                 }
             }
         })
-
+        _setContext(internalContext)
         return _runAlways(state);
     }
 
@@ -179,20 +182,23 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (alwaysJSONArr.length === 0) {
             return _runService(state);
         }
+        let internalContext = _context;
         // note: use every instead of forEach to break once always condition is met
         alwaysJSONArr.every((alwaysJSON) => {
             const { target, cond, isSetByDefault, event } = alwaysJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
-                _runEffects(effects, '##always##');
+                const tempContext = _runEffects(effects, '##always##');
+                internalContext = {...internalContext, ...tempContext}
                 if (!isSetByDefault) {
                     const nextState = states[target];
+                    _setContext(internalContext)
                     return (_runExit(state, nextState), false);
                 }
             }
             return true;
         });
-
+        _setContext(internalContext)
         return _runService(state)
     }
 
@@ -236,15 +242,18 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (afterJSONArr.length === 0) {
             return _runAsyncService(state);
         }
+        let internalContext = _context
         afterJSONArr.forEach(afterJSON => {
             const { target, cond, isSetByDefault, delay, event } = afterJSON;
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
                 const delayTime = typeof delay === 'function' ? delay(_context) : delay;
                 const _timerId = setTimeout(() => {
-                    _runEffects(effects, '##after##')
+                    const tempContext = _runEffects(effects, '##after##')
+                    internalContext = {...internalContext, ...tempContext}
                     if (!isSetByDefault) {
                         const nextState = states[target]
+                        _setContext(internalContext)
                         _runExit(state, nextState)
                     }
                 }, delayTime);
@@ -252,6 +261,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 _cleanUpEffectsQueue.push(cleanUpEffect)
             }
         })
+        _setContext(internalContext)
         return _runAsyncService(state)
     }
 
@@ -334,11 +344,13 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             _next(nextState)
             return;
         }
-
+        let internalContext = _context
         exitJSONArr.forEach(exitJSON => {
             const effects = exitJSON.event.stateEventCollection ?? [];
-            _runEffects(effects, '##exit##')
+            const tempContext = _runEffects(effects, '##exit##')
+            internalContext = {...internalContext, ...tempContext}
         })
+        _setContext(internalContext)
         _next(nextState)
         return;
     }
