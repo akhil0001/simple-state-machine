@@ -25,11 +25,7 @@
     "build:watch": "vite build --watch"
   },
   "devDependencies": {
-    "@types/node": "^20.9.0",
-    "dts-cli": "^2.0.3",
-    "typescript": "^5.0.2",
-    "vite": "^4.4.5",
-    "vite-plugin-dts": "^3.6.3"
+    "@types/node": "^20.9.0"
   },
   "license": "MIT",
   "publishConfig": {
