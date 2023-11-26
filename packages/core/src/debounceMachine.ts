@@ -1,6 +1,6 @@
 import { MachineConfig, TAsyncCallback, assign, createStates } from "../lib";
 import { createEvents } from "../lib/MachineConfig";
-
+import './timerMachine'
 
 const states = createStates('idle', 'fetching', 'debouncing', 'error')
 const events = createEvents('updateTodoValue')

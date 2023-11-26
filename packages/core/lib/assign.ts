@@ -5,7 +5,7 @@ export function assign<IContext extends TDefaultContext, IEvents extends IDefaul
         let _updatedContext = {}
         for (const key in payload) {
             const cb = payload[key]
-            const newContextVal = cb!(context, event);
+            const newContextVal = typeof cb === 'function' ? cb(context, event) : cb
             _updatedContext = { [key]: newContextVal }
         }
         return { ..._updatedContext }
