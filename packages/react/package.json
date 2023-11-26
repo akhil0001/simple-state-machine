@@ -25,7 +25,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@simple-state-machine/core": "0.0.3"
+    "@simple-state-machine/core": "0.0.3",
+    "react": ">=16.8",
+    "react-dom": "^16.8 || ^17.0"
   },
   "peerDependencies": {
     "react": ">=16.8",
