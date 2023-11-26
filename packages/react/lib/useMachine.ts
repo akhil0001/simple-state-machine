@@ -7,8 +7,9 @@ export function useMachine<U extends TDefaultStates, V extends TDefaultContext, 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [machineConfig])
     const [state, setState] = useState(initialState);
-
+    console.log(state.context)
     const subscribeToAllChangesCb = useCallback((newState: TCurrentState<U, V>) => {
+        console.log(newState.context)
         setState({
             value: newState.value,
             context: newState.context,
@@ -22,7 +23,7 @@ export function useMachine<U extends TDefaultStates, V extends TDefaultContext, 
     }, [start])
 
     useEffect(() => {
-        const unsubscribe = subscribe('allChanges', subscribeToAllChangesCb);
+        const unsubscribe = subscribe('stateChange', subscribeToAllChangesCb);
         return () => {
             unsubscribe()
         }
