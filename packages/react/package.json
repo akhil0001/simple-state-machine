@@ -1,6 +1,6 @@
 {
   "name": "@simple-state-machine/react",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": {
     "name": "Akhil Sai Ram Chennareddy"
   },
@@ -25,7 +25,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@simple-state-machine/core": "latest"
+    "@simple-state-machine/core": "0.0.3"
   },
   "peerDependencies": {
     "react": ">=16.8",
