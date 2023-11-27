@@ -4,7 +4,7 @@ import React from "react";
 
 export const Timer = () => {
   const { state, send } = useMachine(TimerMachine, {}, true);
-  const { time } = state.context;
+  const { time, timeInput } = state.context;
 
   const isRunning = state.value === "running";
 
@@ -26,7 +26,7 @@ export const Timer = () => {
       <input
         type="number"
         disabled={isRunning}
-        value={time}
+        value={timeInput}
         onChange={updateTime}
       />
       <button disabled={isRunning} onClick={start}>
