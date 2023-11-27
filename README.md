@@ -1,5 +1,7 @@
 # simple-state-machine
 
+ **Note: Library is in alpha stage. Work is in progress to improve test coverage and documentation**
+
 - Simple State Machine, as the name is self explanatory, is a typescript library that aims to make coding state machines simple, type-safe and fun. 
 - If you are new to state machines, I would recommend to go through [statecharts.dev](https://statecharts.dev/what-is-a-state-machine.html). Its an amazing design pattern that helps developer to think about UI State problems with a new mental model. 
 
@@ -7,7 +9,7 @@
 ```
    npm i @simple-state-machine/core
 ```
-## Quick galnce
+## Quick glance
 - A simplest state machine can be a "Light<>Dark" Mode toggling. On click of button is toggle from `light` to `dark` or vice versa.
 - State diagram looks something like this for it: ![toggle-sm](./docs/assets/toggle-sm.png)
 - Now code for this machine using this library looks like this
