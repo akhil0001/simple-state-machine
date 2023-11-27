@@ -249,6 +249,11 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 const effects = event.stateEventCollection ?? [];
                 const delayTime = typeof delay === 'function' ? delay(_context) : delay;
                 const _timerId = setTimeout(() => {
+                    const _flag = _validate(state);
+                    if(!_flag) {
+                        _debugLogs('::after effect invalidated::');
+                        return ;
+                    }
                     const tempContext = _runEffects(effects, '##after##')
                     internalContext = {...internalContext, ...tempContext}
                     if (!isSetByDefault) {
@@ -328,7 +333,6 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 }
             }
         })
-        console.log(internalContext)
         _setContext(internalContext)
     }
 
@@ -357,7 +361,6 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function _runSubscriberCallbacks(type: TSubscriberType) {
-        console.log(currentState)
         callbacksArr.forEach(callback => {
             if (callback.type === 'allChanges') {
                 callback.cb(currentState)
