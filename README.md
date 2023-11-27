@@ -27,17 +27,9 @@
 
 ## Examples
 - [Toggle Theme Machine](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd)
-- 
+- [Throttling Machine](https://codesandbox.io/p/sandbox/throttling-x9mzy5) in typescript
 
 ## Why, How and What ?
 
 - For anyone curious to understand these points 
   - [Why ?](./docs/why.md)
-
-
-## TODO (documentation)
-
-- [ ] Need examples in javascript (Codesandbox)
-- [ ] Need examples in typescript (Codesandbox)
-- [ ] Need examples in react (Codesandbox)
-- [ ] Write a how doc and tag it in 3 questions (docs)

@@ -13,7 +13,7 @@
     npm install @simple-state-machine/core @simple-state-machine/react
     ```
 
-### [Timer App]()
+### [Timer App](https://codesandbox.io/p/sandbox/timer-5f7zkf)
 
 ![Timer App Demo](assets/timer-app.png)
 - Lets make a simple timer app in react using state machines
