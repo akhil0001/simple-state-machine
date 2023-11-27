@@ -328,6 +328,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 }
             }
         })
+        console.log(internalContext)
         _setContext(internalContext)
     }
 
@@ -356,6 +357,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function _runSubscriberCallbacks(type: TSubscriberType) {
+        console.log(currentState)
         callbacksArr.forEach(callback => {
             if (callback.type === 'allChanges') {
                 callback.cb(currentState)

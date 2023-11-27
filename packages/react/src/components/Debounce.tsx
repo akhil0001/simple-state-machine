@@ -1,6 +1,7 @@
 import { ChangeEvent, useCallback } from "react";
 import { useMachine } from "../../lib"
 import { debounceMachine } from "../machines/debounceMachine"
+import React from "react";
 
 export const Debounce = () => {
     const { state, send } = useMachine(debounceMachine);

@@ -1,3 +1,4 @@
+import React from "react"
 import { useMachine } from "../../lib"
 import { throttleMachine } from "../machines/throttleMachine"
 

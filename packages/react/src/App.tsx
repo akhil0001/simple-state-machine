@@ -4,6 +4,7 @@ import { counterMachine } from './machines/counterMachine'
 import { Debounce } from './components/Debounce'
 import { Throttle } from './components/Throttle'
 import React from 'react'
+import { Timer } from './components/Timer'
 
 function App() {
   const { state, send } = useMachine(counterMachine)
@@ -26,6 +27,7 @@ function App() {
       </p>
       <Debounce />
       <Throttle />
+      <Timer />
     </>
   )
 }
