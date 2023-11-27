@@ -20,3 +20,4 @@ import { createStates, createEvents, MachineConfig, createContext } from "@simpl
     .moveTo("running")
     .updateContext({ time: (context) => context.time - 1 });
   
+  running.always().if(context => context.time <= 0).moveTo('idle')

@@ -1,17 +1,13 @@
 import { useMachine } from "../../lib";
-import { useEffect } from "react";
 import { TimerMachine } from "../machines/timerMachine.ts";
 import React from "react";
 
 export const Timer = () => {
-  const { state, send } = useMachine(TimerMachine);
+  const { state, send } = useMachine(TimerMachine, {}, true);
   const { time } = state.context;
 
   const isRunning = state.value === "running";
 
-  useEffect(() => {
-    console.log(state);
-  }, [state]);
 
   const updateTime = (e) =>
     send({
