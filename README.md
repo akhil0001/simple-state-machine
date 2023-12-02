@@ -33,7 +33,7 @@
 
 - ## API
   - [API Documentation](./docs/api-doc.md)
-  - [Life Cycle Documentation](./docs/)
+  - [Life Cycle Documentation](./docs/life-cycle.md)
 
 ## Why, How and What ?
 

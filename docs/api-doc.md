@@ -162,3 +162,5 @@
           .updateContext(updateResponse)
           .fireAndForget((context, event) => console.log(context, event))
       ```
+
+- Continue to: [Life Cycle Methods of State](./life-cycle.md)
