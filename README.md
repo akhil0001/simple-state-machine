@@ -30,6 +30,7 @@
 ## Examples
 - [Toggle Theme Machine](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd)
 - [Throttling Machine](https://codesandbox.io/p/sandbox/throttling-x9mzy5) in typescript
+- [Debounce Machine](https://codesandbox.io/p/sandbox/debounce-stg462) in React
 
 - ## API
   - [API Documentation](./docs/api-doc.md)
