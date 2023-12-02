@@ -6,7 +6,7 @@
 
 - ## onEnter()
   - When state machine enters into a specific state, the first function to be called is `onEnter`
-  - onEnter() returns [`updateContext`](api-doc.md/#updatecontext) and [`fireAndForget`](api-doc.md/#fireandforget) functions
+  - onEnter() returns [`updateContext`](api.md/#updatecontext) and [`fireAndForget`](api.md/#fireandforget) functions
   - Usage:
     ```js
         idle.onEnter().updateContext({...}).fireAndForget(doSomeStuff)
@@ -16,10 +16,10 @@
   - Once onEnter function is executed, state machine looks out for the `always` configurations
   - `always` is a function which as the name says, that regardless of what the event is, when the state machine machine, always do this. 
   - `always` method returns the following functions
-    - [moveTo](api-doc.md/#moveto)
-    - [if](api-doc.md/#moveto)
-    - [updateContext](api-doc.md/#updatecontext)
-    - [fireAndForget](api-doc.md/#fireandforget)
+    - [moveTo](api.md/#moveto)
+    - [if](api.md/#moveto)
+    - [updateContext](api.md/#updatecontext)
+    - [fireAndForget](api.md/#fireandforget)
   - Usage:
     ```js
         idle.always().if(context => context.url === '').moveTo('notifyUser')
@@ -28,7 +28,7 @@
 - ## invokeCallback()
   - invokeCallback() method allows the users to register event listeners that have callbacks. For example, mouse events or socket events etc. These are generally asynchronous in nature but use `on`  or `addEventListener` methods.
   - Returns
-    - [on](api-doc.md/#on)
+    - [on](api.md/#on)
   - Usage: 
     ```js
         loading.invokeCallback((context, callback) => {
@@ -44,10 +44,10 @@
   - after() method allows the user to perform actions after a certain amount of time. It behaves like `setTimeout`
   - after() method takes either a number or a function that returns a number. This number generally denotes milliseconds.
   - Returns
-    - [moveTo](api-doc.md/#moveto)
-    - [if](api-doc.md/#if)
-    - [updateContext](api-doc.md/#updatecontext)
-    - [fireAndForget](api-doc.md/#fireandforget)
+    - [moveTo](api.md/#moveto)
+    - [if](api.md/#if)
+    - [updateContext](api.md/#updatecontext)
+    - [fireAndForget](api.md/#fireandforget)
   - Usage:
     ```js
         // after 5 sec or 5000 ms move to idle state
@@ -75,21 +75,21 @@
     - ### onDone()
       - onDone function is called to notify the developer that promise has been resolved.
       - Returns
-        - [moveTo](api-doc.md/#moveto)
-        - [updateContext](api-doc.md/#updatecontext)
-        - [fireAndForget](api-doc.md/#fireandforget)
+        - [moveTo](api.md/#moveto)
+        - [updateContext](api.md/#updatecontext)
+        - [fireAndForget](api.md/#fireandforget)
     - ### onError()
       - onError function is called to notify the developer that promise has been rejected
       - Returns
-        - [moveTo](api-doc.md/#moveto)
-        - [updateContext](api-doc.md/#updatecontext)
-        - [fireAndForget](api-doc.md/#fireandforget)
+        - [moveTo](api.md/#moveto)
+        - [updateContext](api.md/#updatecontext)
+        - [fireAndForget](api.md/#fireandforget)
 
 - ## onExit()
   - onExit is the last method of lifecycle that gets called just before transitioning to the next state
   - Returns
-    - [updateContext](api-doc.md/#updatecontext)
-    - [fireAndForget](api-doc.md#fireandforget)
+    - [updateContext](api.md/#updatecontext)
+    - [fireAndForget](api.md#fireandforget)
   - Usage:
     ```js
         error.onExit().fireAndForget(logStateExit)

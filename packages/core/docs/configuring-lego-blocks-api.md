@@ -1,7 +1,7 @@
-# API Documentation
+# Configuring a state machine
 
 ### Table of Contents
-- [API Documentation](#api-documentation)
+- [Configuring a state machine](#configuring-a-state-machine)
     - [Table of Contents](#table-of-contents)
   - [States](#states)
   - [Events](#events)
