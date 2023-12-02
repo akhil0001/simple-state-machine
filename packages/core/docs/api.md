@@ -20,6 +20,6 @@
 
 ### Using State Machine
 - It has 2 parts to it
-- 1. [Using in JS/TS]('./using-in-js.md)
+- 1. [Using in JS/TS](./using-in-js.md)
 - 2. Using in React
 
