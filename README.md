@@ -39,3 +39,6 @@
 
 - For anyone curious to understand these points 
   - [Why ?](./docs/why.md)
+
+## LICENSE
+MIT
