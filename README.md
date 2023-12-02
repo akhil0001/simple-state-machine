@@ -31,6 +31,10 @@
 - [Toggle Theme Machine](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd)
 - [Throttling Machine](https://codesandbox.io/p/sandbox/throttling-x9mzy5) in typescript
 
+- ## API
+  - [API Documentation](./docs/api-doc.md)
+  - [Life Cycle Documentation](./docs/)
+
 ## Why, How and What ?
 
 - For anyone curious to understand these points 
