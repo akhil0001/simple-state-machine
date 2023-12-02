@@ -34,7 +34,7 @@
 - [Debounce Machine](https://codesandbox.io/p/sandbox/debounce-stg462) in React
 
 ## API
-- For `core` library API, please look into [core API](./packages/core/README.md#api)
+- For `core` library API, please look into [core API](./packages/core/docs/api.md)
 
 ## Why, How and What ?
 
