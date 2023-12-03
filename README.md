@@ -16,7 +16,7 @@
 - State diagram looks something like this for it: ![toggle-sm](./docs/assets/toggle-sm.png)
 - Code for the above machine using the library looks like
    ```js
-      import {createState, createEvents, createContext, MachineConfig} from 'simple-state-machine'
+      import {createState, createEvents, createContext, MachineConfig, createMachine} from 'simple-state-machine'
 
       const states = createStates('light', 'dark');
       const events = createEvents('TOGGLE');
@@ -27,6 +27,19 @@
       
       light.on('TOGGLE').moveTo('dark');
       dark.on('TOGGLE').moveTo('light');
+
+      const {send, subscribe, start} = createMachine(ThemeMachine)
+      
+      // toggle on button click
+      document.querySelector('.toggle-btn').addEventListener('click', () => send('TOGGLE'));
+
+      // subscribe to updates
+      machine.subscribe('statechange', (state) => {
+         document.body.className = state.value === 'light' ? 'light-mode' : 'dark-mode'
+      })
+
+      // start the machine
+      start()
    ```
 
 ## Examples
