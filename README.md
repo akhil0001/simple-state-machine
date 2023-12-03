@@ -4,7 +4,7 @@
 
  🚧**Note: Work is in progress to improve test coverage and documentation**🚧
 
-- Simple State Machine, is a typescript library that aims to make coding state machines simple, type-safe and fun. 
+- Simple State Machine is a typescript library that aims to make coding state machines simple, type-safe and fun. 
 - If you are new to state machines, I would recommend to go through [statecharts.dev](https://statecharts.dev/what-is-a-state-machine.html). Its an amazing design pattern that helps developer to think about UI State problems with a new mental model. 
 
 ## Packages
