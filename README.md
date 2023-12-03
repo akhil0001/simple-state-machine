@@ -1,4 +1,6 @@
-# simple-state-machine
+<p align='center'>
+   <img src="./docs/assets/simple-state-machine-logo.png">
+</p>
 
  🚧**Note: Work is in progress to improve test coverage and documentation**🚧
 
