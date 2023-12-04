@@ -34,6 +34,7 @@
         loading.invokeCallback((context, callback) => {
             const clickListener = () => callback('CLICKED')
             document.addEventListener('click', clickListener)
+            // returning a cleanup function in optional
             return function cleanUp() {
                 document.removeEventListener(clickListener)
             }
