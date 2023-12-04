@@ -29,7 +29,7 @@ export type TStateEvent<IContext extends TDefaultContext, IEvents extends IDefau
 }
 export type TSendBack<IEvents extends IDefaultEvent> = (action: { type: IEvents[number], data?: Record<string, any> } | IEvents[number]) => void
 
-export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: IContext, sendBack: TSendBack<IEvents>) => () => void;
+export type TCallback<IContext, IEvents extends IDefaultEvent> = (context: IContext, sendBack: TSendBack<IEvents>) =>(() => any)| any;
 
 export type TAsyncCallback<IContext> = (context: IContext) => Promise<any>
 
