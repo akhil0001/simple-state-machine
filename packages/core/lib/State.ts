@@ -2,7 +2,7 @@
 import { Action, TIf, TMoveTo } from "./Action";
 import { StateEvent } from "./StateEvent";
 import { TCond, TTargetState } from "./internalTypes";
-import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TSendBack, TStateEventCallback, TUpdateContextEventCallback } from "./types";
+import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 export type TStateJSON<IContext extends TDefaultContext, IStates extends readonly string[], IEvents extends IDefaultEvent> = {
     [key: symbol]: Array<{
