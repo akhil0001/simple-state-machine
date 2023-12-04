@@ -208,7 +208,10 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         _internalState.stateValue = value
 
         const { callback: service } = _getStateConfig(state);
-        const cleanUpEffects = service(_context, send);
+        let cleanUpEffects = service(_context, send);
+        if(typeof cleanUpEffects !== "function"){
+            cleanUpEffects = () => {}
+        }
         _cleanUpEffectsQueue.push(cleanUpEffects);
         _runAfter(state)
     }
