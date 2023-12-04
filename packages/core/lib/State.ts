@@ -116,7 +116,7 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
             value: this.#value
         }
     }
-    invokeCallback(callback: (context: IContext, sendBack: TSendBack<IEvents>) => () => void): {
+    invokeCallback(callback: TCallback<IContext, IEvents>): {
         on: (actionType: IEvents[number]) => {
             moveTo: TMoveTo<IContext, IStates, IEvents>,
             if: TIf<IContext, IStates, IEvents>
