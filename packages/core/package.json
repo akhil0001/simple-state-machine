@@ -30,5 +30,10 @@
   "license": "MIT",
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "url": "https://github.com/akhil0001/simple-state-machine.git",
+    "type": "git",
+    "directory": "packages/core"
   }
 }
