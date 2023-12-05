@@ -1,5 +1,5 @@
-import {assert, describe, expect, test} from 'vitest';
-import {MachineConfig, createStates} from '../lib/index'
+import { assert, describe, expect, test } from 'vitest';
+import { MachineConfig, createStates } from '../lib/index'
 
 describe("Access to functions", () => {
     const dummyMachine = new MachineConfig([], {}, [])
@@ -11,17 +11,15 @@ describe("Access to functions", () => {
     })
 })
 
-describe("States should be same as strings", () => {
-    const states = createStates('idle', 'loading', 'load end')
-    const dummyMachine = new MachineConfig(states, {}, [])
-    test('Should match the createStates params', () => {
-        expect(states).toEqual(Object.keys(dummyMachine.getStates()))
-    })
-});
 
 describe("Return of methods of MachineConfig instance", () => {
     test('getStates() should return an empty objects when passed empty array', () => {
-        const dummyMachine = new MachineConfig([], {} ,[]);
+        const dummyMachine = new MachineConfig([], {}, []);
         expect({}).toEqual(dummyMachine.getStates())
     })
-})
+    test('Should match the createStates params', () => {
+        const states = createStates('idle', 'loading', 'load end')
+        const dummyMachine = new MachineConfig(states, {}, [])
+        expect(states).toEqual(Object.keys(dummyMachine.getStates()))
+    })
+});
