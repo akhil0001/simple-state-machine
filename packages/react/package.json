@@ -46,5 +46,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/akhil0001/simple-state-machine.git",
+    "type": "git",
+    "directory": "packages/react"
+  }
 }
