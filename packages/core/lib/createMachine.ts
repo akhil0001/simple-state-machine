@@ -439,7 +439,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             _debugLogs('checkForNext:: invalidated', eventsQueue, _internalState.value)
             return;
         }
-        eventsQueue.pop()
+        eventsQueue.shift()
         _debugLogs('checkForNext:: moving ahead with ', event.action)
         _internalState.value = 'living'
         if (typeof event?.action === 'object')
