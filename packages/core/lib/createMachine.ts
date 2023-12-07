@@ -434,12 +434,12 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function checkForNext() {
-        const event = eventsQueue.at(-1);
+        const event = eventsQueue[0];
         if (!event || _internalState.value !== 'subscribersNotified') {
             _debugLogs('checkForNext:: invalidated', eventsQueue, _internalState.value)
             return;
         }
-        eventsQueue.pop()
+        eventsQueue.shift()
         _debugLogs('checkForNext:: moving ahead with ', event.action)
         _internalState.value = 'living'
         if (typeof event?.action === 'object')
