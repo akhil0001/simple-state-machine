@@ -23,7 +23,7 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "prepublish": "npm run install @simple-state-machine/core"
+    "prepublish": "npm install @simple-state-machine/core"
   },
   "dependencies": {
     "@simple-state-machine/core": "latest",
