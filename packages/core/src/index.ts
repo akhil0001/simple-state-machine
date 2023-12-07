@@ -36,8 +36,8 @@ function init() {
     start()
 }
 
-const {start, send, subscribe} = createMachine(RouterMachine);
-subscribe('allChanges', (state, actionType) => console.log(state.context.pathname, 'from cb by ', actionType))
+const {start, send, subscribe} = createMachine(RouterMachine, {} ,true);
+subscribe('allChanges', (state, actionType) => console.log("::: ",state.context.pathname, 'from cb by ', actionType))
 const a = document.createElement('a')
 a.addEventListener('click', (e) =>{
     e.preventDefault();
@@ -52,5 +52,10 @@ a.addEventListener('click', (e) =>{
 
 a.innerText = 'Link'
 document.body.appendChild(a)
+const text = document.createElement('h1')
+subscribe('allChanges', (state, actionType) => {
+    text.innerHTML = state.context.pathname + ' by ' + actionType
+});
+document.body.appendChild(text)
 start();
 window.onload = init
