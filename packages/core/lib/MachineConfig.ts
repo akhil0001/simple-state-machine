@@ -2,12 +2,9 @@ import { Action, TIf, TMoveTo } from "./Action";
 import { State, TStateJSON } from "./State";
 import { StateEvent } from "./StateEvent";
 import { MACHINE_SUPER_STATE } from "./constants";
-import { TCond, TTargetState } from "./internalTypes";
+import { TCond, TStates, TTargetState } from "./internalTypes";
 import { IDefaultEvent, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
-type TStates<T extends readonly string[], IContext extends TDefaultContext, IEvents extends IDefaultEvent> = {
-    [TIndex in T[number]]: State<T, IContext, IEvents>
-}
 
 export function createEvents<T extends readonly string[]>(...args: T) {
     return args
