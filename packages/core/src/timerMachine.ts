@@ -1,6 +1,6 @@
 import { createStates, createEvents, createContext, MachineConfig, createMachine } from "../lib";
 
-  
+  console.log('entered')
   const states = createStates("idle", "running");
   const events = createEvents("UPDATE_TIME", "START", "PAUSE", "STOP");
   const context = createContext({ time: 0 });
@@ -17,9 +17,8 @@ import { createStates, createEvents, createContext, MachineConfig, createMachine
     .after(1000)
     .moveTo("running")
     .updateContext({ time: (context) => context.time - 1 })
-    .fireAndForget(console.log);
   
-  const machine = createMachine(timerMachine);
+  const machine = createMachine(timerMachine, {time: 10});
+  machine.subscribe('allChanges', (state) => console.log('timer state', state.context.time))
   machine.start();
   machine.send("START");
-  machine.subscribe('allChanges', (state) => state.context.time < -10 && machine.send('STOP'))
