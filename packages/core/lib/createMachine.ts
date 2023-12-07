@@ -2,10 +2,12 @@
 import { TStateJSONPayload } from "./Action";
 import { MachineConfig } from "./MachineConfig";
 import { State, TStateJSON } from "./State";
+import { TStates } from "./internalTypes";
 import { IDefaultEvent, TAfterCallback, TCurrentState, TDefaultContext, TDefaultStates, TStateEvent } from "./types";
+import { deepEqual } from "./utils";
 
 // types
-type TSubscribeCb<U extends TDefaultStates, V> = (state: TCurrentState<U, V>) => any
+type TSubscribeCb<U extends TDefaultStates, V> = (state: TCurrentState<U, V>, actionType?: string) => any
 
 export type TSubscribe<U extends TDefaultStates, V> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
 
@@ -43,13 +45,20 @@ type TCreateMachineReturn<U extends TDefaultStates, V, W extends IDefaultEvent> 
     mermaidInspect: () => string;
 }
 
-type TInternalStateEnum = 'entered' | 'living' | 'exited' | 'dead';
+type TInternalStateEnum = 'entered' | 'living' | 'exited' | 'dead' | 'subscribersNotified';
 type TInternalState<V extends TDefaultStates> = {
     value: TInternalStateEnum,
     stateValue: V[number]
 }
 
-type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange'
+type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange';
+
+type TAction<W extends IDefaultEvent> = { type: W[number], data?: Record<string, any> } | W[number]
+
+type TEventsQueue<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent> = {
+    currentState: TStates<U, V, W>[U[number]],
+    action: TAction<W>
+}[]
 
 // functions
 export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V, debug: boolean = false): TCreateMachineReturn<U, V, W> {
@@ -74,6 +83,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         cb: TSubscribeCb<U, V>
     }> = new Set();
 
+    const eventsQueue: TEventsQueue<U, V, W> = [];
+
     let _cleanUpEffectsQueue: Array<() => any> = [];
 
     function _setIsStarted(value: boolean) {
@@ -84,15 +95,22 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         return isStarted;
     }
 
-    function _setContext(newContext: V) {
+    function _setContext(newContext: V, whoCalled: string) {
+        if(deepEqual(_context, newContext)){
+            return ;
+        }
         _context = { ...newContext };
         currentState.context = _context;
-        _runSubscriberCallbacks('contextChange')
+        _debugLogs('setContext:: ', whoCalled, ' called setContext')
+        _runSubscriberCallbacks('contextChange', whoCalled)
     }
 
     function _setCurrentState(newState: State<U, V, W>) {
         const { value: newStateValue } = _getStateConfig(newState)
         const { value: currentStateValue } = _getStateConfig(_currentState)
+        if(newStateValue === currentStateValue){
+            return ;
+        }
         currentState.history = currentStateValue;
         _currentState = newState;
         currentState.value = newStateValue;
@@ -158,15 +176,15 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
                 const tempContext = _runEffects(effects, '##enter##');
-                internalContext = {...internalContext, ...tempContext}
+                internalContext = { ...internalContext, ...tempContext }
                 if (target !== currentState.value) {
                     const nextState = states[target];
-                    _setContext(internalContext)
+                    _setContext(internalContext, 'entry')
                     return _runExit(state, nextState)
                 }
             }
         })
-        _setContext(internalContext)
+        _setContext(internalContext, 'entry')
         return _runAlways(state);
     }
 
@@ -189,16 +207,16 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             if (cond(_context)) {
                 const effects = event.stateEventCollection ?? [];
                 const tempContext = _runEffects(effects, '##always##');
-                internalContext = {...internalContext, ...tempContext}
+                internalContext = { ...internalContext, ...tempContext }
                 if (!isSetByDefault) {
                     const nextState = states[target];
-                    _setContext(internalContext)
+                    _setContext(internalContext, 'always')
                     return (_runExit(state, nextState), false);
                 }
             }
             return true;
         });
-        _setContext(internalContext)
+        _setContext(internalContext, 'always')
         return _runService(state)
     }
 
@@ -209,8 +227,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
 
         const { callback: service } = _getStateConfig(state);
         let cleanUpEffects = service(_context, send);
-        if(typeof cleanUpEffects !== "function"){
-            cleanUpEffects = () => {}
+        if (typeof cleanUpEffects !== "function") {
+            cleanUpEffects = () => { }
         }
         _cleanUpEffectsQueue.push(cleanUpEffects);
         _runAfter(state)
@@ -253,15 +271,15 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 const delayTime = typeof delay === 'function' ? delay(_context) : delay;
                 const _timerId = setTimeout(() => {
                     const _flag = _validate(state);
-                    if(!_flag) {
+                    if (!_flag) {
                         _debugLogs('::after effect invalidated::');
-                        return ;
+                        return;
                     }
                     const tempContext = _runEffects(effects, '##after##')
-                    internalContext = {...internalContext, ...tempContext}
+                    internalContext = { ...internalContext, ...tempContext }
                     if (!isSetByDefault) {
                         const nextState = states[target]
-                        _setContext(internalContext)
+                        _setContext(internalContext, 'after')
                         _runExit(state, nextState)
                     }
                 }, delayTime);
@@ -269,7 +287,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 _cleanUpEffectsQueue.push(cleanUpEffect)
             }
         })
-        _setContext(internalContext)
+        _setContext(internalContext, 'after')
         return _runAsyncService(state)
     }
 
@@ -297,12 +315,12 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 internalContext = { ...internalContext, ...tempContext, }
                 const nextState = states[target]
                 if (!isSetByDefault) {
-                    _setContext(internalContext)
+                    _setContext(internalContext, 'machineActListener')
                     return _runExit(state, nextState)
                 }
             }
         })
-        _setContext(internalContext)
+        _setContext(internalContext, 'machineActListener')
         return _runActiveListener(state, actionType, data)
     }
 
@@ -319,6 +337,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         const { stateJSON } = _getStateConfig(state);
         const eventJSONArr = _findObjThatMatchDescription(actionType, stateJSON)
         if (eventJSONArr.length === 0) {
+            _internalState.value = 'subscribersNotified';
+            checkForNext();
             return;
         }
         let internalContext = _context;
@@ -331,12 +351,14 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
                 internalContext = { ...internalContext, ...tempContext, }
                 const nextState = states[target]
                 if (!isSetByDefault) {
-                    _setContext(internalContext)
+                    _setContext(internalContext, actionType)
                     return _runExit(state, nextState)
                 }
             }
         })
-        _setContext(internalContext)
+        _internalState.value = 'subscribersNotified';
+        _setContext(internalContext, actionType)
+        checkForNext();
     }
 
     function _runExit(state: State<U, V, W>, nextState: State<U, V, W>) {
@@ -356,20 +378,20 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         exitJSONArr.forEach(exitJSON => {
             const effects = exitJSON.event.stateEventCollection ?? [];
             const tempContext = _runEffects(effects, '##exit##')
-            internalContext = {...internalContext, ...tempContext}
+            internalContext = { ...internalContext, ...tempContext }
         })
-        _setContext(internalContext)
+        _setContext(internalContext, 'exit')
         _next(nextState)
         return;
     }
 
-    function _runSubscriberCallbacks(type: TSubscriberType) {
+    function _runSubscriberCallbacks(type: TSubscriberType, actionType?: string) {
         callbacksArr.forEach(callback => {
             if (callback.type === 'allChanges') {
-                callback.cb(currentState)
+                callback.cb(currentState, actionType)
             }
             else if (callback.type === type) {
-                callback.cb(currentState)
+                callback.cb(currentState, actionType)
             }
         })
     }
@@ -394,19 +416,36 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         }
     }
 
+
     function _getStateConfig(state: State<U, V, W>) {
         return state.getConfig()
     }
 
-    function send(action: { type: W[number], data?: Record<string, any> } | W[number]) {
+    function send(action: TAction<W>) {
         if (!_getIsStarted()) {
             console.warn('start the machine using .start method before sending the events');
             return;
         }
-        if (typeof action === "object")
-            _next(_currentState, action.type, action?.data)
+        eventsQueue.push({
+            currentState: _currentState,
+            action
+        });
+        checkForNext();
+    }
+
+    function checkForNext() {
+        const event = eventsQueue.at(-1);
+        if (!event || _internalState.value !== 'subscribersNotified') {
+            _debugLogs('checkForNext:: invalidated', eventsQueue, _internalState.value)
+            return;
+        }
+        eventsQueue.pop()
+        _debugLogs('checkForNext:: moving ahead with ', event.action)
+        _internalState.value = 'living'
+        if (typeof event?.action === 'object')
+            _next(event.currentState, event.action.type, event.action?.data)
         else
-            _next(_currentState, action)
+            _next(event.currentState, event.action)
     }
 
     function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
@@ -417,6 +456,9 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function start() {
+        if (isStarted) {
+            return;
+        }
         _runSubscriberCallbacks('allChanges')
         _next(_currentState)
     }
