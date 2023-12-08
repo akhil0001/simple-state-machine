@@ -35,5 +35,14 @@
     "url": "https://github.com/akhil0001/simple-state-machine.git",
     "type": "git",
     "directory": "packages/core"
-  }
+  },
+  "keywords": [
+    "state machine",
+    "state-machine",
+    "state-management",
+    "state management",
+    "simple state machine",
+    "simple-state-machine/core",
+    "statechart"
+  ]
 }
