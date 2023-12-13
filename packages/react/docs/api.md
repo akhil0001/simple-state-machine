@@ -56,7 +56,7 @@
         }
       ```
     - ### useSharedMachine(machineConfig)
-      - ⚠️ WARN: EXPERIMENTAL ⚠️
+      - ⚠️ WARNING : EXPERIMENTAL ⚠️
       - `useSharedMachine` hook is similar to `useMachine` hook except that this hook just uses one instance of the machine. 
       - To elaborate, in the above example we have a counter machine and one component that invokes it. If we want to share the same state across different components, either we need to do `prop-drilling` or use `createContext`.
       - Instead, what if we have a hook that could share the machine state across the users of the machine. The philosophy behind this hook that you can now share the state anywhere across the React tree
