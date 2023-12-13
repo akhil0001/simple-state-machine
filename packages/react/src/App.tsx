@@ -5,7 +5,7 @@ import { Throttle } from './components/Throttle'
 import React from 'react'
 import { Timer } from './components/Timer'
 import { EvenOrOdd } from './EvenOrOdd'
-import { useSharedMachine } from '../lib/useMachine'
+import { useSharedMachine } from '../lib'
 
 function App() {
   const { state, send } = useSharedMachine(counterMachine)

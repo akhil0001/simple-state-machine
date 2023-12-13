@@ -1,5 +1,5 @@
 import React from "react";
-import { useSharedMachine } from "../lib/useMachine"
+import { useSharedMachine } from "../lib"
 import { counterMachine } from "./machines/counterMachine"
 
 export const EvenOrOdd = () => {
