@@ -38,6 +38,7 @@ export type TInspectReturnType<V extends TDefaultStates> = {
 }
 
 type TCreateMachineReturn<U extends TDefaultStates, V, W extends IDefaultEvent> = {
+    id: Symbol;
     state: TCurrentState<U, V>;
     send: (action: { type: W[number], data?: Record<string, any> } | W[number]) => void;
     subscribe: TSubscribe<U, V>
@@ -62,7 +63,7 @@ type TEventsQueue<U extends TDefaultStates, V extends TDefaultContext, W extends
 
 // functions
 export function createMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V, debug: boolean = false): TCreateMachineReturn<U, V, W> {
-    const { states, context: initialContext, stateJSON: masterStateJSON } = machineConfig.getConfig();
+    const { states, context: initialContext, stateJSON: masterStateJSON, id } = machineConfig.getConfig();
     let _context = { ...initialContext, ...context };
     const initialStateValue: keyof typeof states = Object.keys(states)[0];
     let _currentState = states[initialStateValue]
@@ -511,5 +512,5 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         return stateChartStr
     }
 
-    return { state: currentState, send, subscribe, start, mermaidInspect };
+    return { state: currentState, send, subscribe, start, mermaidInspect, id };
 }
