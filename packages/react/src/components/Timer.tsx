@@ -3,7 +3,7 @@ import { TimerMachine } from "../machines/timerMachine.ts";
 import React from "react";
 
 export const Timer = () => {
-  const { state, send } = useMachine(TimerMachine, {}, true);
+  const { state, send } = useMachine(TimerMachine);
   const { time, timeInput } = state.context;
 
   const isRunning = state.value === "running";
