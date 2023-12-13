@@ -3,7 +3,7 @@
   "author": {
     "name": "Akhil Sai Ram Chennareddy"
   },
-  "version": "0.0.18",
+  "version": "0.0.19",
   "type": "module",
   "files": [
     "dist"
