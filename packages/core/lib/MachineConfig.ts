@@ -14,12 +14,14 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
     #context: IContext;
     #actions: IEvents;
     #stateJSON: TStateJSON<IContext, IStates, IEvents> = {}
+    #id: Symbol;
 
     constructor(states: IStates, newContext: IContext, actions: IEvents) {
         const defaultState: readonly string[] = [MACHINE_SUPER_STATE]
         this.#context = { ...newContext ?? {} };
         this.#addStates<typeof states>(states.length > 0 ? states : defaultState as IStates)
         this.#actions = actions
+        this.#id = Symbol();
     }
 
     #addStates<U extends readonly string[]>(states: U): TStates<U, IContext, IEvents> {
@@ -69,8 +71,9 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         const states = this.#states;
         const context = this.#context
         const stateJSON = this.#stateJSON
+        const id = this.#id
         return {
-            states, context, actions, stateJSON
+            states, context, actions, stateJSON, id
         }
     }
 
