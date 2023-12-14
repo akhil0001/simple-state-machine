@@ -38,5 +38,6 @@ export type TAfterCallback<IContext> = (context: IContext) => number;
 export type TCurrentState<U extends TDefaultStates, V> = {
     value: U[number];
     history: U[number];
-    context: V
+    context: V,
+    matches: (expectedVal: U[number]) => boolean
 }

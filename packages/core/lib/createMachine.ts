@@ -71,7 +71,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     const currentState = {
         value: initialStateValue,
         history: initialStateValue,
-        context: _context // TODO: Should deep clone this
+        context: _context, // TODO: Should deep clone this
+        matches: _matches
     }
 
     let isStarted = false;
@@ -87,6 +88,10 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     const eventsQueue: TEventsQueue<U, V, W> = [];
 
     let _cleanUpEffectsQueue: Array<() => any> = [];
+
+    function _matches(expectedVal: U[number]) {
+        return currentState.value === expectedVal;
+    }
 
     function _setIsStarted(value: boolean) {
         isStarted = value;
