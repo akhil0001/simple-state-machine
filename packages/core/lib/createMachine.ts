@@ -299,6 +299,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         const flag = _validate(state)
         if (!flag) {
             _debugLogs('::invalidated::');
+            _internalState.value = 'subscribersNotified';
             return;
         }
         const eventJSONArr = _findObjThatMatchDescription(actionType, masterStateJSON);
@@ -332,7 +333,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         _debugLogs('active listener::', value, 'act::', actionType)
         const flag = _validate(state);
         if (!flag) {
-            _debugLogs('::invalidated::')
+            _debugLogs('::invalidated::');
+            _internalState.value = 'subscribersNotified';
             return;
         }
         const { stateJSON } = _getStateConfig(state);
