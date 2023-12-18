@@ -300,6 +300,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (!flag) {
             _debugLogs('::invalidated::');
             _internalState.value = 'subscribersNotified';
+            checkForNext();
             return;
         }
         const eventJSONArr = _findObjThatMatchDescription(actionType, masterStateJSON);
@@ -335,6 +336,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         if (!flag) {
             _debugLogs('::invalidated::');
             _internalState.value = 'subscribersNotified';
+            checkForNext();
             return;
         }
         const { stateJSON } = _getStateConfig(state);
