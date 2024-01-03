@@ -68,7 +68,9 @@
 - Lets transform these statements into the code below
     ```js
         // lets get the states first
-        const {idle, running} = TimerMachineConfig.getStates()
+        const {whenIn} = TimerMachineConfig;
+
+        const idle = whenIn('idle')
         
         // lets define transitions
         idle
@@ -77,10 +79,10 @@
         idle
             .on('START')
             .moveTo('running');
-        running
+        whenIn('running')
             .on('PAUSE')
             .moveTo('idle')
-        running
+        whenIn('running')
             .on('STOP')
             .moveTo('idle')
             .updateContext({time: 0})
@@ -92,7 +94,7 @@
 - There is only one thing left, its that app has to decrement the time after every one second, which is the crux of the app. For this, developer need not go through all the hassle of creating `setInterval` and storing its `id` and then clearing its `id` when user clicks on stop etc. This library handles it all by providing `after` method. 
   ```js
     // after takes time in milliseconds. 1000ms === 1sec
-    running
+    whenIn('running')
         .after(1000)
         .moveTo('running')
         .updateContext({time: context => context.time - 1})

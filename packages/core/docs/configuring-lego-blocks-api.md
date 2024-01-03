@@ -72,12 +72,28 @@
     - The instanceof machine config would return wide variety of things that can be used to create `transitions`, `conditions` etc. Will look into them in a moment. 
     - The instance of machine config is the object that encapsulates all the logic of lego blocks and hence will be used for the rest of the app as is
       - ### getStates()
+        - Status: `@deprecated`. Use [`whenIn`](#wheninstatestring)
         - getStates is a function that can be used to get the `State` objects that have all the methods to define variety of state functionalities
         - Usage:
             ```js
                 const {idle, loading, error} = FetchingMachine.getStates()
             ```
         - **Library Alert**: States returned have the same name as their counterparts that were passed as strings in [`createStates()`](#createstates)
+      - ### whenIn(state:string)
+        - whenIn is a function takes states as strings that are passed in [`createStates()`](#createstates) function. 
+        - Usage:
+          ```js
+            const {whenIn} = FetchingMachine;
+            
+            // one way of using whenIn
+            whenIn('idle').on('LOAD').moveTo('loading');
+
+            // other way of  using whenIn
+            const idle = whenIn('idle')
+            const loading = whenIn('loading')
+
+            idle.on('LOAD').moveTo('loading')
+          ```
 
 ## Transitions
 - Transitions define what happens when a state recieves an event. There can be 4 things that can happen when a state receives an event. They are
