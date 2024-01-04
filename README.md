@@ -23,10 +23,10 @@
       const context = createContext({});
 
       const ThemeMachine = new MachineConfig(states, context, events);
-      const {light, dark} = ThemeMachine.getStates();
+      const {whenIn} = ThemeMachine
       
-      light.on('TOGGLE').moveTo('dark');
-      dark.on('TOGGLE').moveTo('light');
+      whenIn('light').on('TOGGLE').moveTo('dark');
+      whenIn('dark').on('TOGGLE').moveTo('light');
 
       const {send, subscribe, start} = createMachine(ThemeMachine)
       

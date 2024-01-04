@@ -19,13 +19,13 @@
    const context = createContext({response: null}) 
 
    const fetchingMachine = new MachineConfig(states, context, events);
-   const {idle, loading} = fetchingMachine.getStates()
+   const { whenIn } = fetchingMachine
 
-   idle
+   whenIn('idle')
       .on('CLICK')
       .moveTo('loading');
    
-   loading
+   whenIn('loading')
       .invokeAsyncCallback(() => fetch('https://jsonplaceholder.typicode.com/todos/'))
       .onDone()
       .moveTo('idle')

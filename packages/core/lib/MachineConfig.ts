@@ -22,6 +22,7 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         this.#addStates<typeof states>(states.length > 0 ? states : defaultState as IStates)
         this.#actions = actions
         this.#id = Symbol();
+        this.whenIn = this.whenIn.bind(this)
     }
 
     #addStates<U extends readonly string[]>(states: U): TStates<U, IContext, IEvents> {
@@ -32,6 +33,10 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         return newStates;
     }
 
+    /**
+     * @deprecated Use `whenIn` method instead 
+     * @returns states
+     */
     getStates(): TStates<IStates, IContext, IEvents> {
         return this.#states
     }
@@ -77,4 +82,8 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         }
     }
 
+    whenIn(state: IStates[number]) {
+        const currentState = this.#states[state];
+        return currentState
+    }
 }

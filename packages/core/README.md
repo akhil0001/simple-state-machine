@@ -17,9 +17,10 @@
 
       const ThemeMachine = new MachineConfig(states, context, events);
       const {light, dark} = ThemeMachine.getStates();
-      
-      light.on('TOGGLE').moveTo('dark');
-      dark.on('TOGGLE').moveTo('light');
+
+      const {whenIn} = ThemeMachine;
+      whenIn('light').on('TOGGLE').moveTo('dark');
+      whenIn('dark').on('TOGGLE').moveTo('light');
    ```
 
 ## Examples
