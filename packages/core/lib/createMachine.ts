@@ -97,8 +97,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     }
 
     function _setContext(newContext: V, whoCalled: string) {
-        if(deepEqual(_context, newContext)){
-            return ;
+        if (deepEqual(_context, newContext)) {
+            return;
         }
         _context = { ...newContext };
         currentState.context = _context;
@@ -109,8 +109,8 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     function _setCurrentState(newState: State<U, V, W>) {
         const { value: newStateValue } = _getStateConfig(newState)
         const { value: currentStateValue } = _getStateConfig(_currentState)
-        if(newStateValue === currentStateValue){
-            return ;
+        if (newStateValue === currentStateValue) {
+            return;
         }
         currentState.history = currentStateValue;
         _currentState = newState;
@@ -245,9 +245,11 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
 
         return asyncService(_context)
             .catch(() => {
+                _internalState.value = 'living';
                 _next(state, '##onError##')
             })
             .then((data: any) => {
+                _internalState.value = 'living';
                 _debugLogs('asyncServiceRun::', value, 'internalStateVal::', _internalState.stateValue)
                 _next(state, '##onDone##', data)
             })
@@ -406,7 +408,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
 
     function _next(nextState: State<U, V, W>, actionType: string = '', actionData: Record<string, any> = {}) {
         const { value: nextStateValue } = _getStateConfig(nextState)
-        _debugLogs('next::', nextStateValue, "act::", actionType)
+        _debugLogs('next::', nextStateValue, "act::", actionType, 'internalState:: ', _internalState.value)
         if (_internalState.value === 'dead') {
             _setIsStarted(true)
             return _runEntry(nextState)
