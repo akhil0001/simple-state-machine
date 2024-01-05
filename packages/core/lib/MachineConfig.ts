@@ -38,7 +38,11 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
      * @returns states
      */
     getStates(): TStates<IStates, IContext, IEvents> {
-        return this.#states
+        // skip machineSuperState since its only for internal use, but for not the user
+        const stateKeys = Object.keys(this.#states)
+        const isSuperStateOnlyState = stateKeys.length === 1 && stateKeys.includes(MACHINE_SUPER_STATE)
+        const statesThanCanBeReturned = isSuperStateOnlyState ? {} : this.#states
+        return statesThanCanBeReturned as TStates<IStates, IContext, IEvents>
     }
 
     #updateStateJSON(actionType: symbol, payload: {

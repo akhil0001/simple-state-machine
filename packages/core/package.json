@@ -22,7 +22,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "build:watch": "vite build --watch"
+    "build:watch": "vite build --watch",
+    "test": "vitest"
   },
   "devDependencies": {
     "@types/node": "^20.9.0"
