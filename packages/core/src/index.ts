@@ -1,6 +1,6 @@
 import { createMachine } from '../lib'
 import { debounceMachine } from './debounceMachine'
-import { RouterMachine } from './routerMachine'
+// import { RouterMachine } from './routerMachine'
 function init() {
     // get elements
     const inputEl = document.getElementById('todoNumber')
@@ -10,7 +10,7 @@ function init() {
     const { start, send, subscribe } = createMachine(debounceMachine, {
         url: 'https://jsonplaceholder.typicode.com/todos/',
         delay: 1000
-    })
+    }, true)
     inputEl?.addEventListener('input', (e) => {
         const target = e.currentTarget as HTMLInputElement;
         send({
@@ -21,13 +21,14 @@ function init() {
         })
     });
     // just state change
-    subscribe('stateChange', state => {
+    subscribe(state => {
+        console.log('------ I am now in ', state.value, ' ------')
         if (statusEl) {
             statusEl.innerHTML = "Current State of Machine : <i>" + state.value + '</i>'
         }
     });
     // for all changes
-    subscribe('allChanges', (state) => {
+    subscribe((state) => {
         if (responseEl && state.context.data) {
             responseEl.innerText = 'Response::' + state.context.data.title
         }
@@ -36,26 +37,26 @@ function init() {
     start()
 }
 
-const {start, send, subscribe} = createMachine(RouterMachine, {} ,true);
-subscribe('allChanges', (state, actionType) => console.log("::: ",state.context.pathname, 'from cb by ', actionType))
-const a = document.createElement('a')
-a.addEventListener('click', (e) =>{
-    e.preventDefault();
-    start()
-    send({
-        type: 'PUSH',
-        data: {
-            to: '/home'
-        }
-    })
-})
+// const {start, send, subscribe} = createMachine(RouterMachine, {} ,true);
+// subscribe((state, actionType) => console.log("::: ",state.context.pathname, 'from cb by ', actionType))
+// const a = document.createElement('a')
+// a.addEventListener('click', (e) =>{
+//     e.preventDefault();
+//     start()
+//     send({
+//         type: 'PUSH',
+//         data: {
+//             to: '/home'
+//         }
+//     })
+// })
 
-a.innerText = 'Link'
-document.body.appendChild(a)
-const text = document.createElement('h1')
-subscribe('allChanges', (state, actionType) => {
-    text.innerHTML = state.context.pathname + ' by ' + actionType
-});
-document.body.appendChild(text)
-start();
+// a.innerText = 'Link'
+// document.body.appendChild(a)
+// const text = document.createElement('h1')
+// subscribe((state, actionType) => {
+//     text.innerHTML = state.context.pathname + ' by ' + actionType
+// });
+// document.body.appendChild(text)
+// start();
 window.onload = init

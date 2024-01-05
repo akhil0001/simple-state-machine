@@ -1,6 +1,6 @@
 import { MachineConfig, TAsyncCallback, assign, createStates } from "../lib";
 import { createEvents } from "../lib/MachineConfig";
-import './timerMachine'
+// import './timerMachine'
 
 const states = createStates('idle', 'fetching', 'debouncing', 'error')
 const events = createEvents('updateTodoValue')
@@ -48,6 +48,3 @@ fetching.invokeAsyncCallback(fetchingUrl)
     .updateContext({ data: (_, event) => event.data.response })
     .fireAndForget(console.log)
 
-fetching.invokeAsyncCallback(fetchingUrl)
-    .onError()
-    .moveTo('error')
