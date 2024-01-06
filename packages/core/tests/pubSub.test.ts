@@ -8,12 +8,12 @@ describe('pubSub util', () => {
             dummyString: 'sample'
         }
     }
-    const statePubSub = new PubSub(initialValue)
+    const statePubSub = new PubSub<typeof initialValue>(initialValue)
     test('reflects initial value', () => {
-        expect(statePubSub.store).toEqual(initialValue)
+        expect(statePubSub.getStore()).toEqual(initialValue)
     })
-    test('publisher does not patch object, but puts the object directly', () => {
+    test('publisher patches object, but shallow', () => {
         statePubSub.publish({ value: 'fetching' })
-        expect(statePubSub.store).toEqual({value: 'fetching'})
+        expect(statePubSub.getStore()).toEqual({...initialValue, value: 'fetching'})
     })
 })
