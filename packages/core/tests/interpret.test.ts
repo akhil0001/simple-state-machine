@@ -36,7 +36,7 @@ statelessMachine.on('DOUBLE_INC').updateContext({
 statelessMachine.on('CUSTOM_DATA').updateContext({
     count: (_, event) => event.data.customData
 }).fireAndForget((_, event) => {
-    outerData.context = {count: event.data.customData}
+    outerData.context = { count: event.data.customData }
 })
 
 describe("interpret machine config", () => {
