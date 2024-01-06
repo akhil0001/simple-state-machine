@@ -2,6 +2,7 @@ import { TDefaultStates, TDefaultContext, IDefaultEvent } from "../types";
 import { EventEmitter } from "./EventEmitter";
 import { PubSub } from "./pubSub";
 import { MachineConfig } from "../MachineConfig";
+import { MachineSuperState } from "./MachineSuperState";
 
 export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
     value: U[number],
@@ -14,19 +15,24 @@ type TInternalState = {
     value: 'hibernating' | 'active'
 }
 
-export type ALL_EVENTS<W extends IDefaultEvent> =  ['##exit##' | '##enter##' | W[number]];
+export type ALL_EVENTS<W extends IDefaultEvent> = ['##exit##' | '##enter##' | '##update##' | W[number]];
 
 export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>) {
-    const { states, context } = machineConfig.getConfig();
+    const { states, context, stateJSON: masterStateJSON } = machineConfig.getConfig();
     const statePubSub = new PubSub<TReturnState<U, V>>();
     const internalStatePubSub = new PubSub<TInternalState>({ value: 'hibernating' })
-    const eventEmitter = new EventEmitter<ALL_EVENTS<W>>();
-    
+    const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>]>();
+
+    function _init() {
+        new MachineSuperState(masterStateJSON, eventEmitter)
+        eventEmitter.on('##update##', (newState) => statePubSub.publish(newState))
+    }
+
     function send(eventName: W[number]) {
         if (internalStatePubSub.getStore().value === 'hibernating') {
             throw new Error('Please start machine before sending events')
         }
-        eventEmitter.emit(eventName)
+        eventEmitter.emit(eventName, statePubSub.getStore())
     }
 
     function start() {
@@ -43,6 +49,8 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         statePubSub.subscribe(cb);
         return unsubscribe
     }
+
+    _init()
     return { start, send, subscribe }
 }
 

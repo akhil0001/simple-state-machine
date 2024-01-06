@@ -6,8 +6,14 @@ import { MACHINE_SUPER_STATE } from '../lib/constants'
 const context = createContext({
     count: 0
 })
-const events = createEvents('INC', 'DEC')
-const states = createStates()
+const events = createEvents('INC', 'DEC', "PRINT", "DOUBLE_INC")
+const states = createStates();
+
+
+const outerData = {
+    context: context 
+}
+
 const statelessMachine = new MachineConfig(states, context, events)
 statelessMachine.on('INC').updateContext({
     count: context => context.count + 1
@@ -15,6 +21,16 @@ statelessMachine.on('INC').updateContext({
 
 statelessMachine.on('DEC').updateContext({
     count: context => context.count - 1
+})
+
+statelessMachine.on('PRINT').fireAndForget(context => {
+    outerData.context = {...context};
+})
+
+statelessMachine.on('DOUBLE_INC').updateContext({
+    count: context => context.count + 1
+}).updateContext({
+    count: context => context.count + 1
 })
 
 describe("interpret machine config", () => {
@@ -55,13 +71,27 @@ describe('interpret stateless machine config', () => {
     subscribe(subscribeCallback)
     start();
     const increment = () => send('INC');
-    
+    const decrement = () => send('DEC')
     test('state value should be super state', () => {
         expect(state.value).toEqual(MACHINE_SUPER_STATE) 
     })
 
-    test('should update context on sending event', () => {
+    test('should update context on sending event that is set to update context', () => {
         increment();
+        expect(state.context.count).toEqual(1)
+        decrement();
+        decrement();
+        expect(state.context.count).toEqual(-1)
+        expect(state.value).toEqual(MACHINE_SUPER_STATE)
+    })
+
+    test('should fire a side effect on sending an event that is set to fireAndForget', () =>{
+        send('PRINT')
+        expect(outerData.context.count).toEqual(-1)
+    })
+
+    test('chained updateContexts gets updated context from the previous context', () => {
+        send('DOUBLE_INC');
         expect(state.context.count).toEqual(1)
     })
 })
