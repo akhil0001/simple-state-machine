@@ -1,14 +1,14 @@
-import { describe, expect, test } from 'vitest'
-import { MachineConfig, createContext, createEvents } from '../lib'
-import { interpret } from '../lib/interpret/interpret'
+import { describe, expect, test, vi } from 'vitest'
+import { MachineConfig, createContext, createEvents, createStates } from '../lib'
+import { TReturnState, interpret } from '../lib/interpret/interpret'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
 
 const context = createContext({
     count: 0
 })
 const events = createEvents('INC', 'DEC')
-
-const statelessMachine = new MachineConfig([], context, events)
+const states = createStates()
+const statelessMachine = new MachineConfig(states, context, events)
 statelessMachine.on('INC').updateContext({
     count: context => context.count + 1
 })
@@ -19,13 +19,26 @@ statelessMachine.on('DEC').updateContext({
 
 describe("interpret machine config", () => {
     let state = {} as any;
-    const { start, subscribe, send } = interpret(statelessMachine)
-    subscribe(newState => { state = {...newState} })
+    const { start, subscribe, send } = interpret(statelessMachine);
+    const callback = {
+        subscribeCallback(newState: TReturnState<typeof states, typeof context>) {
+            state = {...newState}
+        } 
+    }
+    const subscribeCallbackSpy = vi.spyOn(callback, 'subscribeCallback');
+    subscribe(callback.subscribeCallback)
     const increment = () => send('INC');
 
     test('cannot send events without starting machine', () => {
         expect(increment).toThrowError('Please start machine before sending events')
     })
+    
+    test('starting machine more than once does nothing', () => {
+        start();
+        start();
+        expect(subscribeCallbackSpy).toHaveBeenCalledTimes(1)
+    })
+
     test('receive an update on starting machine', () => {
         start();
         expect(state.value).toEqual(MACHINE_SUPER_STATE);
