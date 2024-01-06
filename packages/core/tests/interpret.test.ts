@@ -18,7 +18,7 @@ statelessMachine.on('DEC').updateContext({
 })
 
 describe("interpret machine config", () => {
-    let state = {} as any;
+    let state = {} as TReturnState<typeof states, typeof context>;
     const { start, subscribe, send } = interpret(statelessMachine);
     const callback = {
         subscribeCallback(newState: TReturnState<typeof states, typeof context>) {
