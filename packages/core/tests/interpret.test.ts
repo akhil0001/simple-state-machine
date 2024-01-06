@@ -60,5 +60,8 @@ describe('interpret stateless machine config', () => {
         expect(state.value).toEqual(MACHINE_SUPER_STATE) 
     })
 
-    
+    test('should update context on sending event', () => {
+        increment();
+        expect(state.context.count).toEqual(1)
+    })
 })
