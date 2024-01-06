@@ -21,18 +21,18 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
     const { states, context, stateJSON: masterStateJSON } = machineConfig.getConfig();
     const statePubSub = new PubSub<TReturnState<U, V>>();
     const internalStatePubSub = new PubSub<TInternalState>({ value: 'hibernating' })
-    const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>]>();
+    const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>();
 
     function _init() {
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newState) => statePubSub.publish(newState))
     }
 
-    function send(eventName: W[number]) {
+    function send(eventName: W[number], data?: object) {
         if (internalStatePubSub.getStore().value === 'hibernating') {
             throw new Error('Please start machine before sending events')
         }
-        eventEmitter.emit(eventName, statePubSub.getStore())
+        eventEmitter.emit(eventName, statePubSub.getStore(), data || {})
     }
 
     function start() {
