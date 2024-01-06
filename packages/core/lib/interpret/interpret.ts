@@ -14,12 +14,14 @@ type TInternalState = {
     value: 'hibernating' | 'active'
 }
 
+export type ALL_EVENTS<W extends IDefaultEvent> =  ['##exit##' | '##enter##' | W[number]];
+
 export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>) {
     const { states, context } = machineConfig.getConfig();
     const statePubSub = new PubSub<TReturnState<U, V>>();
     const internalStatePubSub = new PubSub<TInternalState>({ value: 'hibernating' })
-    const eventEmitter = new EventEmitter()
-
+    const eventEmitter = new EventEmitter<ALL_EVENTS<W>>();
+    
     function send(eventName: W[number]) {
         if (internalStatePubSub.getStore().value === 'hibernating') {
             throw new Error('Please start machine before sending events')
@@ -41,7 +43,6 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         statePubSub.subscribe(cb);
         return unsubscribe
     }
-
     return { start, send, subscribe }
 }
 
