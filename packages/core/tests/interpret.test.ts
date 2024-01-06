@@ -45,3 +45,20 @@ describe("interpret machine config", () => {
         expect(state.context).toEqual({count: 0})
     })
 })
+
+describe('interpret stateless machine config', () => {
+    let state = {} as TReturnState<typeof states, typeof context>;
+    const { start, subscribe, send } = interpret(statelessMachine);
+    const subscribeCallback = (newState: TReturnState<typeof states, typeof context>) => {
+            state = {...newState}
+    }
+    subscribe(subscribeCallback)
+    start();
+    const increment = () => send('INC');
+    
+    test('state value should be super state', () => {
+        expect(state.value).toEqual(MACHINE_SUPER_STATE) 
+    })
+
+    
+})
