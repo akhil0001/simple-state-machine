@@ -3,7 +3,7 @@ import { EventEmitter } from "./EventEmitter";
 import { PubSub } from "./pubSub";
 import { MachineConfig } from "../MachineConfig";
 
-type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
+export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
     value: U[number],
     context: V
 }
@@ -28,8 +28,10 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     function start() {
-        statePubSub.publish({ value: Object.keys(states)[0], context })
-        internalStatePubSub.publish({value: 'active'})
+        if (internalStatePubSub.getStore().value === 'hibernating') {
+            statePubSub.publish({ value: Object.keys(states)[0], context })
+            internalStatePubSub.publish({ value: 'active' })
+        }
     }
 
     function subscribe(cb: TSubscribeCallback<U, V>) {
