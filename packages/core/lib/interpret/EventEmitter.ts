@@ -21,7 +21,7 @@ export class EventEmitter<TEvents extends readonly string[], TArgs extends unkno
         else
             this.eventsMap.set(eventName, [...cbArr])
     }
-    emit(eventName: TEvents[number], ...args: TArgs) {
+    emit(eventName: TEvents[number], ...args: Partial<TArgs>) {
         if (this.eventsMap.has(eventName)) {
             this.eventsMap.get(eventName)?.forEach(event => {
                 if (typeof event === 'function')
