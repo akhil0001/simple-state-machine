@@ -29,7 +29,8 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         eventEmitter.on('##update##', (newState) => {
             const state = states[newState.value]
             const {stateJSON} = state.getConfig()
-            new StateHandler(stateJSON, eventEmitter, newState.context);
+            const randomId = Math.round(Math.random()*123456)
+            new StateHandler(stateJSON, eventEmitter, newState.context, newState.value, randomId);
             statePubSub.publish(newState)
         })
         eventEmitter.on('##updateContext##', (newState) => {
