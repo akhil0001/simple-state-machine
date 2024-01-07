@@ -3,6 +3,7 @@ import { EventEmitter } from "./EventEmitter";
 import { PubSub } from "./pubSub";
 import { MachineConfig } from "../MachineConfig";
 import { MachineSuperState } from "./MachineSuperState";
+import { StateHandler } from "./StateHandler";
 
 export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
     value: U[number],
@@ -15,7 +16,7 @@ type TInternalState = {
     value: 'hibernating' | 'active'
 }
 
-export type ALL_EVENTS<W extends IDefaultEvent> = ['##exit##' | '##enter##' | '##update##' | W[number]];
+export type ALL_EVENTS<W extends IDefaultEvent> = ['##exit##' | '##enter##' | '##update##' | "##updateContext##" | W[number]];
 
 export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>) {
     const { states, context, stateJSON: masterStateJSON } = machineConfig.getConfig();
@@ -25,7 +26,15 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
 
     function _init() {
         new MachineSuperState(masterStateJSON, eventEmitter)
-        eventEmitter.on('##update##', (newState) => statePubSub.publish(newState))
+        eventEmitter.on('##update##', (newState) => {
+            const state = states[newState.value]
+            const {stateJSON} = state.getConfig()
+            new StateHandler(stateJSON, eventEmitter, newState.context);
+            statePubSub.publish(newState)
+        })
+        eventEmitter.on('##updateContext##', (newState) => {
+            statePubSub.publish(newState)
+        })
     }
 
     function send(eventName: W[number], data?: object) {
@@ -37,7 +46,10 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
 
     function start() {
         if (internalStatePubSub.getStore().value === 'hibernating') {
-            statePubSub.publish({ value: Object.keys(states)[0], context })
+            eventEmitter.emit('##update##',{
+                value: Object.keys(states)[0],
+                context
+            })
             internalStatePubSub.publish({ value: 'active' })
         }
     }

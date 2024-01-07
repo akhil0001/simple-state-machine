@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi, beforeEach, afterEach, it } from 'vitest'
 import { MachineConfig, createContext, createEvents, createStates } from '../lib'
 import { TReturnState, interpret } from '../lib/interpret/interpret'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
@@ -112,25 +112,59 @@ describe('interpret stateful machine', () => {
     const states = createStates('light', 'dark');
     const events = createEvents('TOGGLE')
     const context = createContext({
-        switches: 0
+        switches: 0,
+        lightSwitches: 0,
+        darkSwitches: 0
     })
+    const mock = vi.fn((context) => {
+        return context
+    })
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.resetAllMocks()
+    })
+
     const themeMachine = new MachineConfig(states, context, events);
-    const {whenIn} = themeMachine;
+    const { whenIn } = themeMachine;
+
     whenIn('dark').on('TOGGLE').moveTo('light')
-    whenIn('light').on('TOGGLE').moveTo('dark')
+    whenIn('light').on('TOGGLE').moveTo('dark').updateContext({
+        darkSwitches: context => context.darkSwitches + 1
+    }).fireAndForget((context) => {
+        setTimeout(() => mock(context), 1000)
+    })
     themeMachine.on('TOGGLE').updateContext({
         switches: context => context.switches + 1
     })
 
-    const {start, send, subscribe} = interpret(themeMachine);
+    const { start, send, subscribe } = interpret(themeMachine);
     let state = {
         value: MACHINE_SUPER_STATE,
         context: context
     }
     subscribe((newState) => state = newState);
-
     test('initial state will be the first state declared in the createStates function', () => {
         start();
         expect(state.value).toEqual('light')
+    });
+
+    test('should updateContext on sending event', () => {
+        send('TOGGLE');
+        expect(state.context.darkSwitches).toBe(1)
+        expect(state.context.switches).toBe(1)
+    })
+
+    it('should have fireAndForget fired with proper context', () => {
+        send('TOGGLE')
+        vi.advanceTimersByTime(1000)
+        expect(mock).toBeCalledWith({
+            switches: 2,
+            darkSwitches: 2,
+            lightSwitches: 0
+        })
     })
 })
