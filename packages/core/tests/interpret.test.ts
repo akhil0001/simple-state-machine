@@ -131,7 +131,9 @@ describe('interpret stateful machine', () => {
     const themeMachine = new MachineConfig(states, context, events);
     const { whenIn } = themeMachine;
 
-    whenIn('dark').on('TOGGLE').moveTo('light')
+    whenIn('dark').on('TOGGLE').moveTo('light').updateContext({
+        lightSwitches: context => context.lightSwitches + 1
+    })
     whenIn('light').on('TOGGLE').moveTo('dark').updateContext({
         darkSwitches: context => context.darkSwitches + 1
     }).fireAndForget((context) => {
@@ -156,15 +158,22 @@ describe('interpret stateful machine', () => {
         send('TOGGLE');
         expect(state.context.darkSwitches).toBe(1)
         expect(state.context.switches).toBe(1)
+        expect(state.value).toEqual('dark')
     })
 
-    it('should have fireAndForget fired with proper context', () => {
+    test('should move to target state on sending event', () => {
+        send('TOGGLE')
+        expect(state.value).toEqual('light')
+        expect(state.context.lightSwitches).toEqual(1)
+    })
+
+    test('should have fireAndForget fired with proper context', () => {
         send('TOGGLE')
         vi.advanceTimersByTime(1000)
-        expect(mock).toBeCalledWith({
-            switches: 2,
+        expect(mock).toHaveBeenLastCalledWith({
+            switches: 3,
             darkSwitches: 2,
-            lightSwitches: 0
+            lightSwitches: 1
         })
     })
 })

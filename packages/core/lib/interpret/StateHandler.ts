@@ -8,11 +8,15 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     stateJSON: TStateJSON<V, U, W>;
     eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
     context: V;
-    constructor(stateJSON: TStateJSON<V, U, W>, eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V) {
+    value: U[number];
+    id: number;
+    constructor(stateJSON: TStateJSON<V, U, W>, eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
         this.stateJSON = stateJSON;
         this.eventEmitter = eventEmitter;
         this.context = context;
         this.init();
+        this.value = value,
+        this.id = id;
     }
 
     init() {
@@ -37,7 +41,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
-        const { event } = action;
+        const { event, target, isSetByDefault } = action;
         let resultContext = { ...this.context };
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
@@ -48,8 +52,16 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
                 stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
             }
         });
-        const newState = { ...currentState, context: { ...resultContext } }
-        this.eventEmitter.emit('##update##', newState)
+
+        if(isSetByDefault){
+            const newState = { ...currentState, context: { ...resultContext } }
+            this.eventEmitter.emit('##updateContext##', newState)
+        }
+        else {
+            const newState = {...currentState, value: target, context: {...resultContext}}
+            this.eventEmitter.emit('##update##', newState)
+        }
+
     }
 
 
