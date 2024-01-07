@@ -16,7 +16,7 @@ export class MachineSuperState<U extends TDefaultStates, V extends TDefaultConte
         Reflect.ownKeys(this.stateJSON).forEach((event: string | symbol) => {
             if (typeof event === 'symbol') {
                 const description = event.description || '';
-                this.eventEmitter.on(description, (currentState: TReturnState<U,V>, eventData: object) => {
+                this.eventEmitter.on(description, (currentState: TReturnState<U, V>, eventData: object) => {
                     const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
                     this.runActions(action, currentState, description, eventData)
                 })
@@ -25,17 +25,26 @@ export class MachineSuperState<U extends TDefaultStates, V extends TDefaultConte
     }
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
-        const { event } = action;
+        const { event, target, isSetByDefault } = action;
         let resultContext = { ...currentState.context };
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
-                const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: {...eventData} })
+                const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
                 resultContext = { ...resultContext, ...stateEventResult }
             }
-            if(stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(resultContext, {type: eventName, data: {...eventData}})
+            if (stateEvent.type === 'fireAndForget') {
+                stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
             }
         });
-        this.eventEmitter.emit('##updateContext##', { ...currentState, context: { ...resultContext } })
+        if (isSetByDefault) {
+            this.eventEmitter.emit('##updateContext##', { ...currentState, context: { ...resultContext } })
+        }
+        else {
+            this.eventEmitter.emit('##update##', {
+                ...currentState, value: target, context: {
+                    ...resultContext
+                }
+            })
+        }
     }
 }

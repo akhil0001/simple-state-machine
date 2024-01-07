@@ -10,26 +10,33 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     context: V;
     value: U[number];
     id: number;
+    allEventUnscubscribers: Array<(...args:unknown[]) => unknown>
     constructor(stateJSON: TStateJSON<V, U, W>, eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
         this.stateJSON = stateJSON;
         this.eventEmitter = eventEmitter;
         this.context = context;
+        this.allEventUnscubscribers = [];
         this.init();
         this.value = value,
-        this.id = id;
+            this.id = id;
     }
 
     init() {
-        this.eventEmitter.on('##updateContext##', newState => this.setContext(newState.context))
+        const unsubscribe = this.eventEmitter.on('##updateContext##', newState => this.setContext(newState.context))
+        this.allEventUnscubscribers.push(unsubscribe);
         Reflect.ownKeys(this.stateJSON).forEach((event: string | symbol) => {
             if (typeof event === 'symbol') {
                 const description = event.description || '';
-                this.eventEmitter.on(description, (currentState: TReturnState<U, V>, eventData: object) => {
-                    const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
-                    this.runActions(action, currentState, description, eventData)
-                })
+                const boundEventHandler = this.eventHandler.bind(this)
+                const unsubscribe = this.eventEmitter.on(description, (...args) => boundEventHandler(event, description, ...args))
+                this.allEventUnscubscribers.push(unsubscribe)
             }
         })
+    }
+
+    eventHandler(event: symbol, description: string, currentState: TReturnState<U, V>, eventData: object) {
+        const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
+        this.runActions(action, currentState, description, eventData)
     }
 
     getContext() {
@@ -53,16 +60,17 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             }
         });
 
-        if(isSetByDefault){
+        if (isSetByDefault) {
             const newState = { ...currentState, context: { ...resultContext } }
             this.eventEmitter.emit('##updateContext##', newState)
         }
         else {
-            const newState = {...currentState, value: target, context: {...resultContext}}
+            const newState = { ...currentState, value: target, context: { ...resultContext } }
             this.eventEmitter.emit('##update##', newState)
         }
-
     }
 
-
+    destroy() {
+       this.allEventUnscubscribers.forEach(unsubscribe => unsubscribe())
+    }
 }

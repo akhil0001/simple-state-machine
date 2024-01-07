@@ -16,6 +16,22 @@ describe('Fresh eventEventEmitter Instance', () => {
     })
 })
 
+describe('on', () => {
+    const eventEmitter = new EventEmitter();
+    let a = 1;
+    function listenerOne() {
+        a++;
+    }
+    test('should return a function to unsubscribe', () => {
+        const off = eventEmitter.on('SAMPLE', listenerOne)
+        eventEmitter.emit('SAMPLE');
+        expect(a).toEqual(2)
+        off()
+        eventEmitter.emit('SAMPLE');
+        expect(a).toEqual(2)
+    })
+})
+
 describe('emit', () => {
     const eventEmitter = new EventEmitter();
     test('emits to all listeners', () => {

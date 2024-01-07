@@ -110,7 +110,7 @@ describe('interpret stateless machine config', () => {
 
 describe('interpret stateful machine', () => {
     const states = createStates('light', 'dark');
-    const events = createEvents('TOGGLE')
+    const events = createEvents('TOGGLE', 'LIGHT', 'DARK')
     const context = createContext({
         switches: 0,
         lightSwitches: 0,
@@ -142,6 +142,8 @@ describe('interpret stateful machine', () => {
     themeMachine.on('TOGGLE').updateContext({
         switches: context => context.switches + 1
     })
+    themeMachine.on('LIGHT').moveTo('light')
+    themeMachine.on('DARK').moveTo('dark')
 
     const { start, send, subscribe } = interpret(themeMachine);
     let state = {
@@ -176,4 +178,23 @@ describe('interpret stateful machine', () => {
             lightSwitches: 1
         })
     })
+
+    test('should move to new state on recieving an event at machine level', () => {
+        send('LIGHT')
+        expect(state.value).toEqual('light')
+        send('DARK')
+        expect(state.value).toEqual('dark')
+        send('TOGGLE')
+        expect(state.value).toEqual('light')
+    })
+
+    // NOTE: Following tests worked 
+    // test('there should be less than or equal to 2 event emitters at any given point of time', () => {
+    //     expect(eventEmitter.eventsMap.get('##updateContext##')?.length).toBeLessThanOrEqual(2)
+    // })
+
+    // test('there should be less than or equal to 1 event emitters at any given point of time', () => {
+    //     expect(eventEmitter.eventsMap.get('##update##')?.length).toBeLessThanOrEqual(1)
+    // })
+
 })

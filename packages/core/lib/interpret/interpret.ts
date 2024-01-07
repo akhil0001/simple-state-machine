@@ -23,14 +23,17 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
     const statePubSub = new PubSub<TReturnState<U, V>>();
     const internalStatePubSub = new PubSub<TInternalState>({ value: 'hibernating' })
     const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>();
-
+    let stateHandler: StateHandler<U, V, W> | null = null;
     function _init() {
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newState) => {
             const state = states[newState.value]
-            const {stateJSON} = state.getConfig()
-            const randomId = Math.round(Math.random()*123456)
-            new StateHandler(stateJSON, eventEmitter, newState.context, newState.value, randomId);
+            const { stateJSON } = state.getConfig()
+            const randomId = Math.round(Math.random() * 123456);
+            if (stateHandler) {
+                stateHandler.destroy()
+            }
+            stateHandler = new StateHandler(stateJSON, eventEmitter, newState.context, newState.value, randomId);
             statePubSub.publish(newState)
         })
         eventEmitter.on('##updateContext##', (newState) => {
@@ -47,7 +50,7 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
 
     function start() {
         if (internalStatePubSub.getStore().value === 'hibernating') {
-            eventEmitter.emit('##update##',{
+            eventEmitter.emit('##update##', {
                 value: Object.keys(states)[0],
                 context
             })
