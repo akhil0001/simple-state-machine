@@ -107,3 +107,30 @@ describe('interpret stateless machine config', () => {
         expect(outerData.context.count).toEqual(100)
     })
 })
+
+describe('interpret stateful machine', () => {
+    const states = createStates('light', 'dark');
+    const events = createEvents('TOGGLE')
+    const context = createContext({
+        switches: 0
+    })
+    const themeMachine = new MachineConfig(states, context, events);
+    const {whenIn} = themeMachine;
+    whenIn('dark').on('TOGGLE').moveTo('light')
+    whenIn('light').on('TOGGLE').moveTo('dark')
+    themeMachine.on('TOGGLE').updateContext({
+        switches: context => context.switches + 1
+    })
+
+    const {start, send, subscribe} = interpret(themeMachine);
+    let state = {
+        value: MACHINE_SUPER_STATE,
+        context: context
+    }
+    subscribe((newState) => state = newState);
+
+    test('initial state will be the first state declared in the createStates function', () => {
+        start();
+        expect(state.value).toEqual('light')
+    })
+})
