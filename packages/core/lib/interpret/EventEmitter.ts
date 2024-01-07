@@ -6,7 +6,9 @@ export class EventEmitter<TEvents extends readonly string[], TArgs extends unkno
     }
     on(eventName: TEvents[number], cb: (...args: TArgs) => unknown) {
         const cbArr = this.eventsMap.get(eventName) ?? [] as unknown[];
-        this.eventsMap.set(eventName, [...cbArr, cb])
+        this.eventsMap.set(eventName, [...cbArr, cb]);
+        const boundOff = this.off.bind(this)
+        return () => boundOff(eventName, cb)
     }
     off(eventName: TEvents[number], cb: (...args: TArgs) => unknown) {
         if(!this.eventsMap.has(eventName)){
