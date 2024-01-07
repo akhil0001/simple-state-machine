@@ -33,9 +33,9 @@ export class MachineSuperState<U extends TDefaultStates, V extends TDefaultConte
                 resultContext = { ...resultContext, ...stateEventResult }
             }
             if(stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(currentState.context, {type: eventName, data: {...eventData}})
+                stateEvent.callback(resultContext, {type: eventName, data: {...eventData}})
             }
         });
-        this.eventEmitter.emit('##update##', { ...currentState, context: { ...resultContext } })
+        this.eventEmitter.emit('##updateContext##', { ...currentState, context: { ...resultContext } })
     }
 }
