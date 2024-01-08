@@ -12,7 +12,6 @@ export class PubSub<TObject extends object> {
 
     publish(newObj: Partial<TObject>) {
         this.#store = {...this.#store, ...newObj}
-
         this.subscriberSet.forEach(subscriber => {
             if(typeof subscriber === 'function'){
                 subscriber(this.#store)
