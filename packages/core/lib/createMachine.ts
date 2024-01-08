@@ -9,7 +9,7 @@ import { deepEqual } from "./utils";
 // types
 type TSubscribeCb<U extends TDefaultStates, V> = (state: TCurrentState<U, V>, actionType?: string) => any
 
-export type TSubscribe<U extends TDefaultStates, V> = (type: TSubscriberType, cb: TSubscribeCb<U, V>) => () => void;
+export type TSubscribe<U extends TDefaultStates, V> = (cb: TSubscribeCb<U, V>) => () => void;
 
 export type THandle<V extends TDefaultStates> = {
     source: V[number][];
@@ -52,8 +52,6 @@ type TInternalState<V extends TDefaultStates> = {
     stateValue: V[number]
 }
 
-type TSubscriberType = 'allChanges' | 'stateChange' | 'contextChange';
-
 type TAction<W extends IDefaultEvent> = { type: W[number], data?: Record<string, any> } | W[number]
 
 type TEventsQueue<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent> = {
@@ -79,10 +77,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         value: 'dead',
         stateValue: currentState.value
     };
-    const callbacksArr: Set<{
-        type: TSubscriberType,
-        cb: TSubscribeCb<U, V>
-    }> = new Set();
+    const callbacksArr: Set<TSubscribeCb<U, V>> = new Set();
 
     const eventsQueue: TEventsQueue<U, V, W> = [];
 
@@ -103,7 +98,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         _context = { ...newContext };
         currentState.context = _context;
         _debugLogs('setContext:: ', whoCalled, ' called setContext')
-        _runSubscriberCallbacks('contextChange', whoCalled)
+        _runSubscriberCallbacks(whoCalled)
     }
 
     function _setCurrentState(newState: State<U, V, W>) {
@@ -115,7 +110,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         currentState.history = currentStateValue;
         _currentState = newState;
         currentState.value = newStateValue;
-        _runSubscriberCallbacks('stateChange')
+        _runSubscriberCallbacks('allChanges')
     }
 
     function _runEffects(effects: TStateEvent<V, W>[], actionType: W[number] | symbol, data: Record<string, any> = {}) {
@@ -297,7 +292,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
     function _runMachineActiveListener(state: State<U, V, W>, actionType: string, data: Record<string, any>) {
         _internalState.value = 'living';
         const { value } = _getStateConfig(state)
-        _debugLogs('machine active listener::', value, 'act::', actionType);
+        _debugLogs('machine active listener::', value, 'act::', actionType, "state:: ", value, "current State:: ", currentState.value);
         const flag = _validate(state)
         if (!flag) {
             _debugLogs('::invalidated::');
@@ -390,14 +385,9 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
         return;
     }
 
-    function _runSubscriberCallbacks(type: TSubscriberType, actionType?: string) {
+    function _runSubscriberCallbacks(actionType?: string) {
         callbacksArr.forEach(callback => {
-            if (callback.type === 'allChanges') {
-                callback.cb(currentState, actionType)
-            }
-            else if (callback.type === type) {
-                callback.cb(currentState, actionType)
-            }
+            callback(currentState, actionType)
         })
     }
 
@@ -408,7 +398,7 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
 
     function _next(nextState: State<U, V, W>, actionType: string = '', actionData: Record<string, any> = {}) {
         const { value: nextStateValue } = _getStateConfig(nextState)
-        _debugLogs('next::', nextStateValue, "act::", actionType, 'internalState:: ', _internalState.value)
+        _debugLogs('next::', nextStateValue, "act::", actionType, 'internalState:: ', _internalState.value, "currentState:: ", currentState.value)
         if (_internalState.value === 'dead') {
             _setIsStarted(true)
             return _runEntry(nextState)
@@ -453,10 +443,10 @@ export function createMachine<U extends TDefaultStates, V extends TDefaultContex
             _next(event.currentState, event.action)
     }
 
-    function subscribe(type: TSubscriberType, cb: TSubscribeCb<U, V>) {
-        callbacksArr.add({ type, cb });
+    function subscribe(cb: TSubscribeCb<U, V>) {
+        callbacksArr.add(cb);
         return function unsubscribe() {
-            callbacksArr.delete({ type, cb })
+            callbacksArr.delete(cb)
         }
     }
 

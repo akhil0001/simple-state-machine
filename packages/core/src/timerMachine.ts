@@ -19,6 +19,6 @@ import { createStates, createEvents, createContext, MachineConfig, createMachine
     .updateContext({ time: (context) => context.time - 1 })
   
   const machine = createMachine(timerMachine, {time: 10});
-  machine.subscribe('allChanges', (state) => console.log('timer state', state.context.time))
+  machine.subscribe((state) => console.log('timer state', state.context.time))
   machine.start();
   machine.send("START");
