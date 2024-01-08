@@ -10,7 +10,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     context: V;
     value: U[number];
     id: number;
-    allEventUnscubscribers: Array<(...args:unknown[]) => unknown>
+    allEventUnscubscribers: Array<(...args: unknown[]) => unknown>
     constructor(stateJSON: TStateJSON<V, U, W>, eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
         this.stateJSON = stateJSON;
         this.eventEmitter = eventEmitter;
@@ -32,6 +32,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
                 this.allEventUnscubscribers.push(unsubscribe)
             }
         })
+        this.eventEmitter.emit('##enter##')
     }
 
     eventHandler(event: symbol, description: string, currentState: TReturnState<U, V>, eventData: object) {
@@ -71,6 +72,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     destroy() {
-       this.allEventUnscubscribers.forEach(unsubscribe => unsubscribe())
+        this.eventEmitter.emit('##exit##')
+        this.allEventUnscubscribers.forEach(unsubscribe => unsubscribe())
     }
 }

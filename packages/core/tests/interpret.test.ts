@@ -1,7 +1,8 @@
-import { describe, expect, test, vi, beforeEach, afterEach, it } from 'vitest'
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { MachineConfig, createContext, createEvents, createStates } from '../lib'
 import { TReturnState, interpret } from '../lib/interpret/interpret'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
+import { makeThemeMachine } from './machines/themeMachine'
 
 const context = createContext({
     count: 0
@@ -197,4 +198,35 @@ describe('interpret stateful machine', () => {
     //     expect(eventEmitter.eventsMap.get('##update##')?.length).toBeLessThanOrEqual(1)
     // })
 
+})
+
+describe('life cycle methods of state', () => {
+    const lifeCycleMethods = {
+        onEnter: () => 'entered',
+        onExit: () => 'exit'
+    }
+    const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
+    const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
+    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy)
+    const { send, start } = interpret(ThemeMachine);
+
+    test('should call onEnter()', () => {
+        start();
+        expect(onEnterSpy).toHaveBeenCalledWith({
+            switches: 0
+        }, {
+            type: '##enter##',
+            data: {}
+        })
+    })
+
+    test('should call onExit()', () => {
+        send('TOGGLE');
+        expect(onExitSpy).toHaveBeenCalledWith({
+            switches: 1
+        }, {
+            type: '##exit##',
+            data: {}
+        })
+    })
 })
