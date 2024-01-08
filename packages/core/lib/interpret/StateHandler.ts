@@ -21,6 +21,14 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             this.id = id;
     }
 
+    getContext() {
+        return this.context;
+    }
+
+    setContext(newContext: V) {
+        this.context = newContext;
+    }
+
     init() {
         if (!this.eventEmitter) {
             return;
@@ -40,17 +48,9 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.eventEmitter.emit('##enter##')
     }
 
-    eventHandler(event: symbol, description: string, currentState: TReturnState<U, V>, eventData: object) {
+    eventHandler(event: symbol, eventName: string, currentState: TReturnState<U, V>, eventData: object) {
         const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
-        this.runActions(action, currentState, description, eventData)
-    }
-
-    getContext() {
-        return this.context;
-    }
-
-    setContext(newContext: V) {
-        this.context = newContext;
+        this.runActions(action, currentState, eventName, eventData)
     }
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
