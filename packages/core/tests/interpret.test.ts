@@ -218,7 +218,7 @@ describe('life cycle methods of state', () => {
             delay: 1000
         }, {
             type: '##enter##',
-            data: {}
+            data: undefined
         })
     })
 
@@ -229,7 +229,7 @@ describe('life cycle methods of state', () => {
             delay: 1000
         }, {
             type: '##exit##',
-            data: {}
+            data: undefined
         })
     })
 
@@ -322,19 +322,20 @@ describe('life cycle methods of state', () => {
             vi.restoreAllMocks()
         })
 
-        let state = {
-            value: '',
-            context: {
-                input: '',
-                result: {}
-            }
-        }
-        const mockCallback = vi.fn(() => {
-            return 'mock Callback'
-        });
-        const { start, send, subscribe } = interpret(makeDebounceMachine(mockCallback));
-        subscribe(newState => state = newState)
+
         test('should execute callback function mentioned in invokeCallback', () => {
+            let state = {
+                value: '',
+                context: {
+                    input: '',
+                    result: {}
+                }
+            }
+            const mockCallback = vi.fn(() => {
+                return 'mock Callback'
+            });
+            const { start, send, subscribe } = interpret(makeDebounceMachine(mockCallback, () => { }));
+            subscribe(newState => state = newState)
             start();
             expect(state.value).toBe('idle')
             send('UPDATE_INPUT', { input: 'world' })
@@ -351,6 +352,26 @@ describe('life cycle methods of state', () => {
             vi.advanceTimersByTime(8000)
             expect(state.value).toBe('idle')
             expect(mockCallback).toBeCalledTimes(1)
+        })
+
+        test('should execute asynchronous function mentioned in invokeAsynCallback', async () => {
+            const mockAsyncCallback = vi.fn((context) => new Promise((res) => {
+                setTimeout(() => res(context.input), 1000)
+            }));
+            const { start, send, subscribe } = interpret(makeDebounceMachine(async () => { }, mockAsyncCallback));
+            let state = {
+                value: '',
+                context: {
+                    input: '',
+                    result: ''
+                }
+            }
+            subscribe(newState => state = newState);
+            start();
+            send('UPDATE_INPUT', { input: 'hello' })
+
+            vi.advanceTimersByTime(5000)
+            expect(mockAsyncCallback).toHaveBeenCalledOnce()
         })
     })
 })

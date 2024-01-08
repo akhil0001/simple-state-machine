@@ -1,15 +1,18 @@
-import { TDefaultStates, TDefaultContext, IDefaultEvent, TCallback } from "..";
+import { TDefaultStates, TDefaultContext, IDefaultEvent, TCallback, TAsyncCallback } from "..";
 import { TStateJSONPayload } from "../Action";
 import { TStateJSON } from "../State";
 import { TStates } from "../internalTypes";
 import { EventEmitter } from "./EventEmitter";
 import { ALL_EVENTS, TReturnState } from "./interpret";
 
-export type TInternalEvents = ['##exit##' | '##enter##' | '##after##' | '##always##'];
+const INTERNAL_EVENTS = ['##exit##', '##enter##', '##after##', '##always##', '##onDone##', "##onError##"] as const;
+
+type TInternalEvents = typeof INTERNAL_EVENTS;
 
 export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>{
     stateJSON: TStateJSON<V, U, W>;
     service: TCallback<V, W>;
+    asyncService: TAsyncCallback<V>
     eventEmitter: null | EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
     context: V;
     value: U[number];
@@ -19,9 +22,10 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     internalEventEmitter: null | EventEmitter<TInternalEvents, [TReturnState<U, V>, object]>;
 
     constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
-        const { stateJSON, callback } = state.getConfig();
+        const { stateJSON, callback, asyncCallback } = state.getConfig();
         this.stateJSON = stateJSON;
         this.service = callback;
+        this.asyncService = asyncCallback;
         this.eventEmitter = eventEmitter;
         this.internalEventEmitter = new EventEmitter();
         this.context = context;
@@ -50,7 +54,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             if (typeof event === 'symbol') {
                 const description = event.description || '';
                 const boundEventHandler = this.eventHandler.bind(this)
-                const isInternalEventListener = ['##after##', '##enter##', '##exit##', '##always##'].some(event => event === description)
+                const isInternalEventListener = INTERNAL_EVENTS.some(event => event === description)
                 if (this.eventEmitter && !isInternalEventListener) {
                     const unsubscribe = this.eventEmitter.on(description, (...args) => boundEventHandler(event, description, ...args))
                     this.allEventUnsubscribers.push(unsubscribe)
@@ -65,6 +69,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.internalEventEmitter?.emit('##always##')
         this.internalEventEmitter?.emit('##after##')
         this.runService()
+        this.runAsyncService()
     }
 
     eventHandler(event: symbol, eventName: string, currentState: TReturnState<U, V>, eventData: object) {
@@ -95,11 +100,11 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
-                const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
+                const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
                 resultContext = { ...resultContext, ...stateEventResult }
             }
             if (stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
+                stateEvent.callback(resultContext, { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
             }
         });
         if (isSetByDefault) {
@@ -125,6 +130,22 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         })
         if (typeof cleanUpEffect === 'function')
             this.allEventUnsubscribers.push(cleanUpEffect)
+    }
+
+    async runAsyncService() {
+        try {
+            const result = await this.asyncService(this.getContext())
+            this.internalEventEmitter?.emit('##onDone##', {
+                value: this.value,
+                context: this.getContext()
+            }, result)
+        }
+        catch (err) {
+            this.internalEventEmitter?.emit('##onError##', {
+                value: this.value,
+                context: this.getContext()
+            }, err as object)
+        }
     }
 
     exit(newState: TReturnState<U, V>) {

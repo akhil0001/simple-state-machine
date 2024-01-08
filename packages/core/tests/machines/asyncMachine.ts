@@ -1,6 +1,6 @@
 import { MachineConfig, createContext, createEvents, createStates } from "../../lib";
 
-export function makeDebounceMachine(mockCallback) {
+export function makeDebounceMachine(mockCallback, mockAsyncCallback) {
     const states = createStates('idle', 'debouncing', 'fetching')
     const events = createEvents('UPDATE_INPUT', 'FETCH', 'ERROR', 'SUCCESS');
     const context = createContext({
@@ -25,7 +25,7 @@ export function makeDebounceMachine(mockCallback) {
             callback({
                 type: 'SUCCESS',
                 data: {
-                    result: 'hello ' + input
+                    result: input
                 }
             });
         }, 3000)
@@ -33,7 +33,13 @@ export function makeDebounceMachine(mockCallback) {
             clearTimeout(timerId)
         }
     }).on('SUCCESS').moveTo('idle').updateContext({
-        result: (_, event) => event.data.result
+        result: (_, event) => event.data.result + 'from callback'
+    })
+
+    whenIn('fetching').invokeAsyncCallback((context) => {
+        return mockAsyncCallback(context)
+    }).onDone().moveTo('idle').updateContext({
+        result: (context, event) => context.input + event.data + 'from async'
     })
 
     return debounceMachine;

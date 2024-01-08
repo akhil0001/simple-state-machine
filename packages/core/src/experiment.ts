@@ -1,6 +1,4 @@
-import { MachineConfig, createContext, createStates } from "../lib";
 
-import { createEvents } from "../lib/MachineConfig";
 import { interpret } from "../lib/interpret/interpret";
 import { makeDebounceMachine } from "../tests/machines/asyncMachine";
 
@@ -59,8 +57,10 @@ function init() {
     repairBtn.innerText = "REPAIR";
     const counter = document.createElement('p')
 
-   
-    const { start, send, subscribe } = interpret(makeDebounceMachine(() => { }));
+    const mockAsyncCallback = (context) => new Promise((res) => {
+        setTimeout(() => res(context.input), 5000)
+    })
+    const { start, send, subscribe } = interpret(makeDebounceMachine(() => { }, mockAsyncCallback));
     // const inc = () => send('INC')
     // const dec = () => send('DEC');
     const toggle = () => send('UPDATE_INPUT', { input: 'world' })
@@ -71,7 +71,7 @@ function init() {
     input.addEventListener('input', (e) => {
         const target = e.target as HTMLInputElement;
         const value = target.value;
-        send('UPDATE_INPUT',{
+        send('UPDATE_INPUT', {
             input: value
         })
     })
@@ -88,7 +88,7 @@ function init() {
         // counter.innerText = state.context.count + '-' + state.value+'-switches::'+state.context.switches+'-lightSwitches::'+state.context.lightSwitches+'-darkSwitches::'+state.context.darkSwitches
         // counter.innerText =  state.value+'-switches::'+state.context.switches
         counter.innerText = state.value + "::-::" + state.context.result
-        input.innerText = state.context.result
+        input.innerText = state.context.input
     })
     start();
 }
