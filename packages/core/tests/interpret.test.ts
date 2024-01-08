@@ -3,6 +3,7 @@ import { MachineConfig, createContext, createEvents, createStates } from '../lib
 import { TReturnState, interpret } from '../lib/interpret/interpret'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
 import { makeThemeMachine } from './machines/themeMachine'
+import { makeDebounceMachine } from './machines/asyncMachine'
 
 const context = createContext({
     count: 0
@@ -207,7 +208,7 @@ describe('life cycle methods of state', () => {
     }
     const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
     const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
-    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, () => { }, () => {})
+    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, () => { }, () => { })
     const { send, start } = interpret(ThemeMachine);
 
     test('should call onEnter()', () => {
@@ -311,5 +312,45 @@ describe('life cycle methods of state', () => {
         // test('should always moveTo target state on usage of `always`', () => {
 
         // })
+    })
+
+    describe('invoking callback should work', () => {
+        beforeEach(() => {
+            vi.useFakeTimers()
+        })
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        let state = {
+            value: '',
+            context: {
+                input: '',
+                result: {}
+            }
+        }
+        const mockCallback = vi.fn(() => {
+            return 'mock Callback'
+        });
+        const { start, send, subscribe } = interpret(makeDebounceMachine(mockCallback));
+        subscribe(newState => state = newState)
+        test('should execute callback function mentioned in invokeCallback', () => {
+            start();
+            expect(state.value).toBe('idle')
+            send('UPDATE_INPUT', { input: 'world' })
+            expect(state.value).toBe('debouncing')
+            expect(state.context.input).toEqual('world')
+            vi.advanceTimersByTime(1000);
+            expect(state.value).toBe('debouncing')
+            send('UPDATE_INPUT', { input: 'universe' })
+            expect(state.value).toBe('debouncing')
+            vi.advanceTimersByTime(5000)
+            expect(state.value).toBe('fetching')
+            send('UPDATE_INPUT', { input: 'earth' })
+            expect(state.value).toBe('debouncing')
+            vi.advanceTimersByTime(8000)
+            expect(state.value).toBe('idle')
+            expect(mockCallback).toBeCalledTimes(1)
+        })
     })
 })

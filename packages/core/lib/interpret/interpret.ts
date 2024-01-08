@@ -28,11 +28,11 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newState) => {
             const clonedState = { ...newState };
+            stateHandler?.exit(clonedState)
             const state = states[clonedState.value]
-            const { stateJSON } = state.getConfig()
             const randomId = Math.round(Math.random() * 123456);
             statePubSub.publish(clonedState)
-            stateHandler = new StateHandler(stateJSON, eventEmitter, clonedState.context, clonedState.value, randomId);
+            stateHandler = new StateHandler(state, eventEmitter, clonedState.context, clonedState.value, randomId);
         })
         eventEmitter.on('##updateContext##', (newState) => {
             statePubSub.publish(newState)
