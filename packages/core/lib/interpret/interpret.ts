@@ -16,7 +16,7 @@ type TInternalState = {
     value: 'hibernating' | 'active'
 }
 
-export type ALL_EVENTS<W extends IDefaultEvent> = ['##exit##' | '##enter##' | '##update##' | "##updateContext##" | W[number]];
+export type ALL_EVENTS<W extends IDefaultEvent> = ['##update##' | "##updateContext##" | W[number]];
 
 export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>) {
     const { states, context, stateJSON: masterStateJSON } = machineConfig.getConfig();
@@ -27,14 +27,12 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
     function _init() {
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newState) => {
-            const state = states[newState.value]
+            const clonedState = { ...newState };
+            const state = states[clonedState.value]
             const { stateJSON } = state.getConfig()
             const randomId = Math.round(Math.random() * 123456);
-            if (stateHandler) {
-                stateHandler.destroy()
-            }
-            stateHandler = new StateHandler(stateJSON, eventEmitter, newState.context, newState.value, randomId);
-            statePubSub.publish(newState)
+            statePubSub.publish(clonedState)
+            stateHandler = new StateHandler(stateJSON, eventEmitter, clonedState.context, clonedState.value, randomId);
         })
         eventEmitter.on('##updateContext##', (newState) => {
             statePubSub.publish(newState)

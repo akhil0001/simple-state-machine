@@ -207,7 +207,7 @@ describe('life cycle methods of state', () => {
     }
     const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
     const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
-    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, () => { })
+    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, () => { }, () => {})
     const { send, start } = interpret(ThemeMachine);
 
     test('should call onEnter()', () => {
@@ -242,12 +242,14 @@ describe('life cycle methods of state', () => {
         const lifeCycleMethods = {
             onEnter: () => 'entered',
             onExit: () => 'exit',
-            afterTimeoutFire: () => 'afterTimeoutFire'
+            afterTimeoutFire: () => 'afterTimeoutFire',
+            alwaysFireAndForget: () => 'alwaysFireAndFoget'
         }
         const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
         const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
         const afterTimeoutFireSpy = vi.spyOn(lifeCycleMethods, 'afterTimeoutFire');
-        const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, afterTimeoutFireSpy)
+        const alwaysFireAndFogetSpy = vi.spyOn(lifeCycleMethods, 'alwaysFireAndForget');
+        const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, afterTimeoutFireSpy, alwaysFireAndFogetSpy)
         const { send, start, subscribe } = interpret(ThemeMachine)
         let state = {
             value: '',
@@ -297,5 +299,17 @@ describe('life cycle methods of state', () => {
             vi.advanceTimersByTime(5000)
             expect(state.value).toEqual('light')
         })
+
+        test.todo('should support multiple timers')
+
+        test('should always execute actions when using `always`', () => {
+            send('TEST_ALWAYS');
+            expect(state.value).toBe('dark')
+            expect(alwaysFireAndFogetSpy).toBeCalledTimes(1)
+        })
+
+        // test('should always moveTo target state on usage of `always`', () => {
+
+        // })
     })
 })
