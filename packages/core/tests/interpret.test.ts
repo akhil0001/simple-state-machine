@@ -229,4 +229,30 @@ describe('life cycle methods of state', () => {
             data: {}
         })
     })
+
+    describe('utils of state', () => {
+        const ThemeMachine = makeThemeMachine(() => {}, () => {})
+        const {send, start, subscribe} = interpret(ThemeMachine)
+        let state = {
+            value: '',
+            context: {
+                switches: 0
+            }
+        };
+        subscribe(newState => state = newState);
+        start();
+        test('should execute if condition', () => {
+            send('TOGGLE');
+            expect(state.value).toEqual('dark')
+            send('TOGGLE')
+            send('TOGGLE')
+            expect(state.context.switches).toEqual(3)
+            expect(state.value).toEqual('light')
+            send('TOGGLE')
+            send('TOGGLE')
+            send('TOGGLE')
+            expect(state.context.switches).toEqual(6)
+            expect(state.value).toEqual('dark')
+        })
+    })
 })

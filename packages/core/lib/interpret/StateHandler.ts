@@ -6,7 +6,7 @@ import { ALL_EVENTS, TReturnState } from "./interpret";
 
 export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>{
     stateJSON: TStateJSON<V, U, W>;
-    eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
+    eventEmitter: null | EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
     context: V;
     value: U[number];
     id: number;
@@ -22,14 +22,19 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     init() {
+        if (!this.eventEmitter) {
+            return;
+        }
         const unsubscribe = this.eventEmitter.on('##updateContext##', newState => this.setContext(newState.context))
         this.allEventUnscubscribers.push(unsubscribe);
         Reflect.ownKeys(this.stateJSON).forEach((event: string | symbol) => {
             if (typeof event === 'symbol') {
                 const description = event.description || '';
                 const boundEventHandler = this.eventHandler.bind(this)
-                const unsubscribe = this.eventEmitter.on(description, (...args) => boundEventHandler(event, description, ...args))
-                this.allEventUnscubscribers.push(unsubscribe)
+                if (this.eventEmitter) {
+                    const unsubscribe = this.eventEmitter.on(description, (...args) => boundEventHandler(event, description, ...args))
+                    this.allEventUnscubscribers.push(unsubscribe)
+                }
             }
         })
         this.eventEmitter.emit('##enter##')
@@ -49,8 +54,11 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
-        const { event, target, isSetByDefault } = action;
+        const { event, target, isSetByDefault, cond } = action;
         let resultContext = { ...this.context };
+        if (!cond(resultContext)) {
+            return
+        }
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
                 const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
@@ -60,7 +68,9 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
                 stateEvent.callback(resultContext, { type: eventName, data: { ...eventData } })
             }
         });
-
+        if (!this.eventEmitter) {
+            return;
+        }
         if (isSetByDefault) {
             const newState = { ...currentState, context: { ...resultContext } }
             this.eventEmitter.emit('##updateContext##', newState)
@@ -72,7 +82,11 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     }
 
     destroy() {
+        if (!this.eventEmitter) {
+            return;
+        }
         this.eventEmitter.emit('##exit##')
         this.allEventUnscubscribers.forEach(unsubscribe => unsubscribe())
+        this.eventEmitter = null;
     }
 }

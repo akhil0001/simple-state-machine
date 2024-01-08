@@ -13,14 +13,14 @@ export const makeThemeMachine = (onEnterSpy, onExitSpy) => {
 
     whenIn('dark').on('TOGGLE').moveTo('light')
 
+    whenIn('light').on('TOGGLE').if(context => context.switches > 5).moveTo('dark')
+    whenIn('light').on('TOGGLE').if(context => context.switches >= 2).moveTo('light')
     whenIn('light').on('TOGGLE').moveTo('dark')
-
     whenIn('light').onEnter().fireAndForget(onEnterSpy)
     whenIn('light').onExit().fireAndForget(onExitSpy)
 
     ThemeMachine.on('TOGGLE').updateContext({
         switches: context => context.switches + 1
     })
-
     return ThemeMachine;
 }
