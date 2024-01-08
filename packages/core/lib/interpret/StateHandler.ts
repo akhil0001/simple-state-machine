@@ -94,7 +94,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
         const { event, target, isSetByDefault, cond } = action;
-        let resultContext = { ...this.context };
+        let resultContext = { ...this.getContext() };
         if (!cond(resultContext) || !this.eventEmitter || !this.internalEventEmitter) {
             return
         }
@@ -102,19 +102,18 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             if (stateEvent.type === 'updateContext') {
                 const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
                 resultContext = { ...resultContext, ...stateEventResult }
+                this.setContext(resultContext)
             }
             if (stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(resultContext, { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
+                stateEvent.callback(this.getContext(), { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
             }
         });
         if (isSetByDefault) {
-            const newState = { ...currentState, context: { ...resultContext } }
-            this.setContext({ ...resultContext })
+            const newState = { ...currentState, context: { ...this.getContext() } }
             this.eventEmitter.emit('##updateContext##', newState)
         }
         else {
-            const newState = { ...currentState, value: target, context: { ...resultContext } }
-            this.setContext({ ...resultContext })
+            const newState = { ...currentState, value: target, context: { ...this.getContext() } }
             this.eventEmitter.emit('##update##', newState)
         }
     }
