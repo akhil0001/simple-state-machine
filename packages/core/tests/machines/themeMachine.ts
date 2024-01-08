@@ -1,12 +1,13 @@
 import { MachineConfig, createContext, createEvents, createStates } from "../../lib";
 
-const states = createStates('light', 'dark');
-const events = createEvents('TOGGLE')
+const states = createStates('light', 'dark', 'repairing');
+const events = createEvents('TOGGLE', 'REPAIR', 'UPDATE_DELAY')
 const context = createContext({
-    switches: 0
+    switches: 0,
+    delay: 1000
 })
 
-export const makeThemeMachine = (onEnterSpy, onExitSpy) => {
+export const makeThemeMachine = (onEnterSpy, onExitSpy, afterTimeoutFireSpy) => {
     const ThemeMachine = new MachineConfig(states, context, events);
 
     const whenIn = ThemeMachine.whenIn;
@@ -18,9 +19,15 @@ export const makeThemeMachine = (onEnterSpy, onExitSpy) => {
     whenIn('light').on('TOGGLE').moveTo('dark')
     whenIn('light').onEnter().fireAndForget(onEnterSpy)
     whenIn('light').onExit().fireAndForget(onExitSpy)
-
+    whenIn('light').on('REPAIR').moveTo('repairing');
+    whenIn('repairing').after(5000).moveTo('light').fireAndForget(afterTimeoutFireSpy)
+    whenIn('dark').after(context => context.delay).moveTo('repairing');
+    whenIn('repairing').on('TOGGLE').moveTo('dark')
     ThemeMachine.on('TOGGLE').updateContext({
         switches: context => context.switches + 1
+    })
+    ThemeMachine.on('UPDATE_DELAY').updateContext({
+        delay: (_, event) => event.data.delay
     })
     return ThemeMachine;
 }

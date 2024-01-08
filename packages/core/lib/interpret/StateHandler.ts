@@ -10,15 +10,18 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     context: V;
     value: U[number];
     id: number;
-    allEventUnscubscribers: Array<(...args: unknown[]) => unknown>
+    alLEventUnsubscribers: Array<(...args: unknown[]) => unknown>
+    timerIds: NodeJS.Timeout[];
+
     constructor(stateJSON: TStateJSON<V, U, W>, eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
         this.stateJSON = stateJSON;
         this.eventEmitter = eventEmitter;
         this.context = context;
-        this.allEventUnscubscribers = [];
+        this.alLEventUnsubscribers = [];
+        this.value = value;
+        this.id = id;
+        this.timerIds = [];
         this.init();
-        this.value = value,
-            this.id = id;
     }
 
     getContext() {
@@ -34,23 +37,39 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             return;
         }
         const unsubscribe = this.eventEmitter.on('##updateContext##', newState => this.setContext(newState.context))
-        this.allEventUnscubscribers.push(unsubscribe);
+        this.alLEventUnsubscribers.push(unsubscribe);
         Reflect.ownKeys(this.stateJSON).forEach((event: string | symbol) => {
             if (typeof event === 'symbol') {
                 const description = event.description || '';
                 const boundEventHandler = this.eventHandler.bind(this)
                 if (this.eventEmitter) {
                     const unsubscribe = this.eventEmitter.on(description, (...args) => boundEventHandler(event, description, ...args))
-                    this.allEventUnscubscribers.push(unsubscribe)
+                    this.alLEventUnsubscribers.push(unsubscribe)
                 }
             }
         })
         this.eventEmitter.emit('##enter##')
+        this.eventEmitter.emit('##after##')
     }
 
     eventHandler(event: symbol, eventName: string, currentState: TReturnState<U, V>, eventData: object) {
         const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
-        this.runActions(action, currentState, eventName, eventData)
+        const boundRunTimer = this.runTimer.bind(this)
+        const boundRunActions = this.runActions.bind(this)
+        if (eventName === '##after##') {
+            boundRunTimer(action, currentState, eventName, eventData)
+        }
+        else {
+            boundRunActions(action, currentState, eventName, eventData)
+        }
+    }
+
+    runTimer(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
+        const { delay } = action;
+        const delayInNumber = typeof delay === 'number' ? delay : delay(this.getContext())
+        const boundRunActions = this.runActions.bind(this)
+        const timerId = setTimeout(() => boundRunActions(action, currentState, eventName, eventData), delayInNumber)
+        this.timerIds.push(timerId)
     }
 
     runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
@@ -86,7 +105,10 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
             return;
         }
         this.eventEmitter.emit('##exit##')
-        this.allEventUnscubscribers.forEach(unsubscribe => unsubscribe())
+        this.alLEventUnsubscribers.forEach(unsubscribe => unsubscribe())
+        this.timerIds.forEach(timerId => clearTimeout(timerId))
+        this.alLEventUnsubscribers = [];
+        this.timerIds = [];
         this.eventEmitter = null;
     }
 }

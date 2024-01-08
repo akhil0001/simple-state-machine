@@ -207,13 +207,14 @@ describe('life cycle methods of state', () => {
     }
     const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
     const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
-    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy)
+    const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, () => { })
     const { send, start } = interpret(ThemeMachine);
 
     test('should call onEnter()', () => {
         start();
         expect(onEnterSpy).toHaveBeenCalledWith({
-            switches: 0
+            switches: 0,
+            delay: 1000
         }, {
             type: '##enter##',
             data: {}
@@ -223,7 +224,8 @@ describe('life cycle methods of state', () => {
     test('should call onExit()', () => {
         send('TOGGLE');
         expect(onExitSpy).toHaveBeenCalledWith({
-            switches: 1
+            switches: 1,
+            delay: 1000
         }, {
             type: '##exit##',
             data: {}
@@ -231,8 +233,22 @@ describe('life cycle methods of state', () => {
     })
 
     describe('utils of state', () => {
-        const ThemeMachine = makeThemeMachine(() => {}, () => {})
-        const {send, start, subscribe} = interpret(ThemeMachine)
+        beforeEach(() => {
+            vi.useFakeTimers()
+        })
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+        const lifeCycleMethods = {
+            onEnter: () => 'entered',
+            onExit: () => 'exit',
+            afterTimeoutFire: () => 'afterTimeoutFire'
+        }
+        const onEnterSpy = vi.spyOn(lifeCycleMethods, 'onEnter');
+        const onExitSpy = vi.spyOn(lifeCycleMethods, 'onExit');
+        const afterTimeoutFireSpy = vi.spyOn(lifeCycleMethods, 'afterTimeoutFire');
+        const ThemeMachine = makeThemeMachine(onEnterSpy, onExitSpy, afterTimeoutFireSpy)
+        const { send, start, subscribe } = interpret(ThemeMachine)
         let state = {
             value: '',
             context: {
@@ -244,15 +260,42 @@ describe('life cycle methods of state', () => {
         test('should execute if condition', () => {
             send('TOGGLE');
             expect(state.value).toEqual('dark')
-            send('TOGGLE')
-            send('TOGGLE')
+            for (let i = 0; i < 2; i++) {
+                send('TOGGLE')
+            }
             expect(state.context.switches).toEqual(3)
             expect(state.value).toEqual('light')
-            send('TOGGLE')
-            send('TOGGLE')
-            send('TOGGLE')
+            for (let i = 0; i < 3; i++) {
+                send('TOGGLE')
+            }
             expect(state.context.switches).toEqual(6)
             expect(state.value).toEqual('dark')
+        })
+
+        test('should execute after condition', () => {
+            send('TOGGLE')
+            expect(state.value).toEqual('light')
+            send('REPAIR');
+            expect(state.value).toEqual('repairing')
+            vi.advanceTimersByTime(5000)
+            expect(state.value).toEqual('light')
+            expect(afterTimeoutFireSpy).toHaveBeenCalledTimes(1)
+        })
+
+        test('should not execute after condition when there is state transition before that', () => {
+            send('REPAIR');
+            send('TOGGLE');
+            vi.advanceTimersByTime(5000)
+            expect(afterTimeoutFireSpy).not.toHaveBeenCalled()
+        })
+
+        test('should update timer by evaluating function passed to after', () => {
+            send('UPDATE_DELAY', { delay: 5000 })
+            send('TOGGLE') // now get state to dark
+            vi.advanceTimersByTime(5000)
+            expect(state.value).toEqual('repairing')
+            vi.advanceTimersByTime(5000)
+            expect(state.value).toEqual('light')
         })
     })
 })
