@@ -1,3 +1,5 @@
+import { deepEqual } from "../utils";
+
 export class PubSub<TObject extends object> {
     #store: TObject;
     subscriberSet: Set<unknown> | Set<(store: TObject) => unknown>;
@@ -11,6 +13,9 @@ export class PubSub<TObject extends object> {
     }
 
     publish(newObj: Partial<TObject>) {
+        if(deepEqual(this.#store, newObj)){
+            return;
+        }
         this.#store = {...this.#store, ...newObj}
         this.subscriberSet.forEach(subscriber => {
             if(typeof subscriber === 'function'){

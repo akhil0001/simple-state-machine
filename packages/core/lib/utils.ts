@@ -5,35 +5,31 @@ export const createStates = <TStates extends readonly string[]>(...states: TStat
 export const createEvents = <TEvents extends readonly string[]>(...events: TEvents) => events;
 export const createContext = <IContext extends TDefaultContext>(context: IContext) => ({ ...context })
 
-export function deepEqual<U extends TDefaultContext, V extends TDefaultContext>(actualObj: U | V, expectedObj: V | U) {
-  if (actualObj === expectedObj) {
+export function deepEqual(obj1: any, obj2: any): boolean {
+  if (obj1 === obj2) {
     return true;
   }
 
-  if (typeof actualObj !== "object" || typeof expectedObj !== "object") {
+  if (obj1 === null || obj2 === null || typeof obj1 !== "object" || typeof obj2 !== "object") {
     return false;
   }
 
-  const actualObjKey = Object.keys(actualObj);
-  const expectedObjKey = Object.keys(expectedObj);
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
 
-  if (actualObjKey.length !== expectedObjKey.length) {
+  if (keys1.length !== keys2.length) {
     return false;
   }
 
-  for (let key of actualObjKey) {
-    if (!expectedObj.hasOwnProperty(key)) {
+  for (const key of keys1) {
+    if (!obj2.hasOwnProperty(key)) {
       return false;
     }
 
-    const val1 = actualObj[key];
-    const val2 = expectedObj[key];
+    const value1 = obj1[key];
+    const value2 = obj2[key];
 
-    if (val1 !== val2) {
-      return false;
-    }
-
-    if (!deepEqual(val1, val2)) {
+    if (!deepEqual(value1, value2)) {
       return false;
     }
   }

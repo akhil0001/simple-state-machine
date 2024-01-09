@@ -100,8 +100,8 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
-                const stateEventResult = stateEvent.callback(resultContext, { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
-                resultContext = { ...resultContext, ...stateEventResult }
+                const stateEventResult = stateEvent.callback(this.getContext(), { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
+                resultContext = { ...this.getContext(), ...stateEventResult }
                 this.setContext(resultContext)
             }
             if (stateEvent.type === 'fireAndForget') {
