@@ -18,10 +18,10 @@ interface IContext {
 }
 
 export const debounceMachine = new MachineConfig<typeof states, IContext, typeof events>(states, {
-    url: '',
+    url: 'https://jsonplaceholder.typicode.com/todos/',
     data: null,
     todoValue: "1",
-    delay: 500
+    delay: 5000
 }, events)
 
 const fetchingUrl: TAsyncCallback<IContext> = (context) => {

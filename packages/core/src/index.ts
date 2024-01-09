@@ -1,4 +1,4 @@
-import { createMachine } from '../lib'
+import { createMachine, interpret } from '../lib'
 import { debounceMachine } from './debounceMachine'
 // import { RouterMachine } from './routerMachine'
 function init() {
@@ -7,18 +7,16 @@ function init() {
     const responseEl = document.getElementById('response')
     const statusEl = document.getElementById('status')
     // create machine
-    const { start, send, subscribe } = createMachine(debounceMachine, {
-        url: 'https://jsonplaceholder.typicode.com/todos/',
-        delay: 1000
-    }, true)
+    const { start, send, subscribe } = interpret(debounceMachine)
     inputEl?.addEventListener('input', (e) => {
         const target = e.currentTarget as HTMLInputElement;
-        send({
-            type: 'updateTodoValue',
-            data: {
-                todoValue: target.value
-            }
-        })
+        // send({
+        //     type: 'updateTodoValue',
+        //     data: {
+        //         todoValue: target.value
+        //     }
+        // })
+        send('updateTodoValue',{todoValue: target.value})
     });
     // just state change
     subscribe(state => {
