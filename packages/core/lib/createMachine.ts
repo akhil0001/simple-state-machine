@@ -11,32 +11,6 @@ type TSubscribeCb<U extends TDefaultStates, V> = (state: TCurrentState<U, V>, ac
 
 export type TSubscribe<U extends TDefaultStates, V> = (cb: TSubscribeCb<U, V>) => () => void;
 
-export type THandle<V extends TDefaultStates> = {
-    source: V[number][];
-    target: V[number][];
-}
-
-type TEdge<V extends TDefaultStates> = {
-    type: 'custom' | 'selfConnecting';
-    source: V[number];
-    target: V[number];
-    sourceHandle: V[number];
-    id: string;
-    label: string;
-    animated: boolean;
-}
-
-export type TInspectReturnType<V extends TDefaultStates> = {
-    nodes: {
-        id: V[number];
-        data: {
-            label: V[number];
-            handles: THandle<V>;
-        };
-    }[]
-    edges: TEdge<V>[]
-}
-
 type TCreateMachineReturn<U extends TDefaultStates, V, W extends IDefaultEvent> = {
     id: Symbol;
     state: TCurrentState<U, V>;
