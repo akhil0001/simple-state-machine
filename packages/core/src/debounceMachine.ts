@@ -28,7 +28,6 @@ const fetchingUrl: TAsyncCallback<IContext> = (context) => {
     const { url } = context
     return fetch(url + context.todoValue)
         .then(res => res.json())
-        .then(data => ({ response: data }))
 }
 
 const updateTodoValue = assign<IContext, typeof events>({
@@ -45,6 +44,6 @@ debouncing.after(context => context.delay)
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
-    .updateContext({ data: (_, event) => event.data.response })
+    .updateContext({ data: (_, event) => event.data as IAPIResponse })
     .fireAndForget(console.log)
 
