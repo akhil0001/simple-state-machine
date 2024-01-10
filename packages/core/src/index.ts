@@ -1,4 +1,4 @@
-import { createMachine, interpret } from '../lib'
+import { interpret } from '../lib'
 import { debounceMachine } from './debounceMachine'
 // import { RouterMachine } from './routerMachine'
 function init() {

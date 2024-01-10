@@ -1,12 +1,13 @@
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { MachineConfig, createContext, createEvents, createStates } from '../lib'
-import { TReturnState, interpret } from '../lib/interpret/interpret'
+import { TReturnState, interpret } from '../lib'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
 import { makeThemeMachine } from './machines/themeMachine'
 import { makeDebounceMachine } from './machines/asyncMachine'
 
 const context = createContext({
-    count: 0
+    count: 0,
+    dummyCount: 100
 })
 const events = createEvents('INC', 'DEC', "PRINT", "DOUBLE_INC", "CUSTOM_DATA")
 const states = createStates();
@@ -66,7 +67,7 @@ describe("interpret machine config", () => {
     test('receive an update on starting machine', () => {
         start();
         expect(state.value).toEqual(MACHINE_SUPER_STATE);
-        expect(state.context).toEqual({ count: 0 })
+        expect(state.context).toEqual({ count: 0, dummyCount: 100 })
     })
 })
 
@@ -397,4 +398,19 @@ describe('interpet() returns updated state', () => {
     test('state context should be updated', () => {
         expect(state.context).toEqual(outerState.context)
     }) 
+})
+
+describe('interpret() should accept context', () => {
+    const {state, send, start} = interpret(statelessMachine, {count: 10});
+    test('context should be shallow cloned with context declared during declaration of machine', () => {
+        expect(state.context).toEqual({
+            count: 10,
+            dummyCount: 100
+        })
+    })
+    test('passed context should be used in the update context', () => {
+        start()
+        send('INC')
+        expect(state.context.count).toEqual(11)
+    })
 })

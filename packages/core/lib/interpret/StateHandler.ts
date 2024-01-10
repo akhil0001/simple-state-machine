@@ -3,7 +3,7 @@ import { TStateJSONPayload } from "../Action";
 import { TStateJSON } from "../State";
 import { TStates } from "../internalTypes";
 import { EventEmitter } from "./EventEmitter";
-import { ALL_EVENTS, TReturnState } from "./interpret";
+import { ALL_EVENTS, TReturnState } from "./types";
 
 const INTERNAL_EVENTS = ['##exit##', '##enter##', '##after##', '##always##', '##onDone##', "##onError##"] as const;
 

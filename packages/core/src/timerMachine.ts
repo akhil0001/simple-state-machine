@@ -1,4 +1,4 @@
-import { createStates, createEvents, createContext, MachineConfig, createMachine } from "../lib";
+import { createStates, createEvents, createContext, MachineConfig, interpret } from "../lib";
 
   console.log('entered')
   const states = createStates("idle", "running");
@@ -18,7 +18,7 @@ import { createStates, createEvents, createContext, MachineConfig, createMachine
     .moveTo("running")
     .updateContext({ time: (context) => context.time - 1 })
   
-  const machine = createMachine(timerMachine, {time: 10});
+  const machine = interpret(timerMachine, {time: 100});
   machine.subscribe((state) => console.log('timer state', state.context.time))
   machine.start();
   machine.send("START");

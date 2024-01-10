@@ -4,36 +4,17 @@ import { PubSub } from "./pubSub";
 import { MachineConfig } from "../MachineConfig";
 import { MachineSuperState } from "./MachineSuperState";
 import { StateHandler } from "./StateHandler";
+import { TInterpretReturn, TReturnState, ALL_EVENTS, TSubscribeCallback, TInterpretInternalState } from "./types";
 
-export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
-    value: U[number],
-    context: V
-}
-
-type TSubscribeCallback<U extends TDefaultStates, V extends TDefaultContext> = (state: TReturnState<U, V>) => unknown
-
-type TInternalState = {
-    value: 'hibernating' | 'active'
-}
-
-type TInterpretReturn<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent> = {
-    state: TReturnState<U, V>,
-    send: (eventName: W[number], data?: object) => void;
-    subscribe: (cb: TSubscribeCallback<U, V>) => () => void;
-    start: () => void
-}
-
-export type ALL_EVENTS<W extends IDefaultEvent> = ['##update##' | "##updateContext##" | W[number]];
-
-export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>): TInterpretReturn<U, V, W> {
-    const { states, context, stateJSON: masterStateJSON } = machineConfig.getConfig();
+export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V): TInterpretReturn<U, V, W> {
+    const { states, context: declarationContext, stateJSON: masterStateJSON } = machineConfig.getConfig();
     const statePubSub = new PubSub<TReturnState<U, V>>();
-    const internalStatePubSub = new PubSub<TInternalState>({ value: 'hibernating' })
+    const internalStatePubSub = new PubSub<TInterpretInternalState>({ value: 'hibernating' })
     const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>();
     let stateHandler: StateHandler<U, V, W> | null = null;
     let returnState: TReturnState<U, V> = {
         value: '',
-        context: context
+        context: {...declarationContext, ...context}
     }
     function _init() {
         statePubSub.subscribe((newReturnState) => {
@@ -64,7 +45,7 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         if (internalStatePubSub.getStore().value === 'hibernating') {
             eventEmitter.emit('##update##', {
                 value: Object.keys(states)[0],
-                context
+                context: {...declarationContext, ...context}
             })
             internalStatePubSub.publish({ value: 'active' })
         }

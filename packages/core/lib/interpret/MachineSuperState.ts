@@ -2,7 +2,7 @@ import { TDefaultStates, TDefaultContext, IDefaultEvent } from "..";
 import { TStateJSONPayload } from "../Action";
 import { TStateJSON } from "../State";
 import { EventEmitter } from "./EventEmitter";
-import { ALL_EVENTS, TReturnState } from "./interpret";
+import { ALL_EVENTS, TReturnState } from "./types";
 
 export class MachineSuperState<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent> {
     stateJSON: TStateJSON<V, U, W>;
