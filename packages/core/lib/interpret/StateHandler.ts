@@ -16,12 +16,11 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     eventEmitter: null | EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
     context: V;
     value: U[number];
-    id: number;
     allEventUnsubscribers: Array<(...args: unknown[]) => unknown>
     timerIds: NodeJS.Timeout[];
     internalEventEmitter: null | EventEmitter<TInternalEvents, [TReturnState<U, V>, object]>;
 
-    constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number], id: number) {
+    constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number]) {
         const { stateJSON, callback, asyncCallback } = state.getConfig();
         this.stateJSON = stateJSON;
         this.service = callback;
@@ -31,7 +30,6 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.context = context;
         this.allEventUnsubscribers = [];
         this.value = value;
-        this.id = id;
         this.timerIds = [];
         this.init();
     }

@@ -375,3 +375,26 @@ describe('life cycle methods of state', () => {
         })
     })
 })
+
+describe('interpet() returns updated state', () => {
+    const {state, start, send, subscribe} = interpret(makeThemeMachine(() => {}, () => {}, () => {}, () => {}))
+    let outerState = {
+        value: '',
+        context: {}
+    }
+    subscribe(newState => outerState = newState);
+    test('state value should equal initial state',() => {
+        start()
+        expect(state.value).toEqual(outerState.value)
+    })
+    test('state context should equal initial context', () => {
+        expect(state.context).toEqual(outerState.context)
+    })
+    test('state value should be updated', () => {
+        send('TOGGLE');
+        expect(state.value).toEqual("dark")
+    })
+    test('state context should be updated', () => {
+        expect(state.context).toEqual(outerState.context)
+    }) 
+})
