@@ -41,7 +41,7 @@
       // start the machine
       start()
    ```
-
+- Enough talk, show me code: [![Edit toggle-theme-machine](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd?file=%2Fsrc%2Findex.mjs%3A25%2C1)
 ## Examples
 
 - [Toggle Theme Machine](https://codesandbox.io/p/sandbox/toggle-theme-machine-dyrwzd)
