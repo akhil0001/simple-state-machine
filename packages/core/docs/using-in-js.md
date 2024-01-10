@@ -48,20 +48,12 @@
   ```
 
 ### subscribe()
-- subscribe function takes in 2 parameters
-  - 1. either `allChanges` or `stateChange`
-  - 2. a callback that notifies the developer about the subscribed changes
-- `allChanges` is the default option which allows the user to subscribe to all the changes that occur. There are generally 2 changes here: State changes and context changes. Not all times, we would like to subscribe to all the changes. Whereas `stateChange` just subscribes to state value changes
+- subscribe function takes a callback that notifies the developer about the subscribed changes
 - Usage:
   ```js
-    subscribe('stateChange', (state) => {
-        // logs everytime there is a state value change
+    subscribe((state) => {
         console.log(state.value)
-    })
-
-    // all changes
-    subscribe('allChanges', (state) => {
-        document.querySelector('p').innerText = state.context.response
+        console.log(state.context)
     })
   ```
 

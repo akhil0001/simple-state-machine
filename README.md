@@ -34,7 +34,7 @@
       document.querySelector('.toggle-btn').addEventListener('click', () => send('TOGGLE'));
 
       // subscribe to updates
-      machine.subscribe('statechange', (state) => {
+      machine.subscribe((state) => {
          document.body.className = state.value === 'light' ? 'light-mode' : 'dark-mode'
       })
 
