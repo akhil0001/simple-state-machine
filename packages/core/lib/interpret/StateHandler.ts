@@ -98,12 +98,12 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
-                const stateEventResult = stateEvent.callback(this.getContext(), { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
+                const stateEventResult = stateEvent.callback(this.getContext(), { type: eventName, data: structuredClone(eventData)})
                 resultContext = { ...this.getContext(), ...stateEventResult }
                 this.setContext(resultContext)
             }
             if (stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(this.getContext(), { type: eventName, data: typeof eventData === 'object' ? { ...eventData } : eventData })
+                stateEvent.callback(this.getContext(), { type: eventName, data: structuredClone(eventData)})
             }
         });
         if (isSetByDefault) {
@@ -131,7 +131,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
 
     async runAsyncService() {
         try {
-            const result = await this.asyncService(this.getContext())
+            const result = await this.asyncService(this.getContext());
             this.internalEventEmitter?.emit('##onDone##', {
                 value: this.value,
                 context: this.getContext()
