@@ -19,6 +19,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     allEventUnsubscribers: Array<(...args: unknown[]) => unknown>
     timerIds: NodeJS.Timeout[];
     internalEventEmitter: null | EventEmitter<TInternalEvents, [TReturnState<U, V>, object]>;
+    locked: boolean;
 
     constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number]) {
         const { stateJSON, callback, asyncCallback } = state.getConfig();
@@ -31,6 +32,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.allEventUnsubscribers = [];
         this.value = value;
         this.timerIds = [];
+        this.locked = false
         this.init();
     }
 
@@ -62,7 +64,19 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
                     this.allEventUnsubscribers.push(unsubscribe!)
                 }
             }
+        });
+        // a dummy listenermfor exit to set context for exit actions
+        const unsub = this.internalEventEmitter?.on('##exit##', (newState) => {
+            const latest = { ...newState, context: this.getContext() }
+            this.eventEmitter?.emit('##updateContext##', latest)
         })
+        this.allEventUnsubscribers.push(unsub!)
+        const unsub1 = this.eventEmitter?.on('##update##', (newState) => {
+            this.locked = true
+            this.setContext(newState.context)
+            this.exit(newState)
+        })
+        this.allEventUnsubscribers.push(unsub1!)
         this.internalEventEmitter?.emit('##enter##')
         this.internalEventEmitter?.emit('##always##')
         this.internalEventEmitter?.emit('##after##')
@@ -98,21 +112,26 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
         event.stateEventCollection.forEach(stateEvent => {
             if (stateEvent.type === 'updateContext') {
-                const stateEventResult = stateEvent.callback(this.getContext(), { type: eventName, data: structuredClone(eventData)})
+                const stateEventResult = stateEvent.callback(this.getContext(), { type: eventName, data: eventData})
                 resultContext = { ...this.getContext(), ...stateEventResult }
                 this.setContext(resultContext)
             }
             if (stateEvent.type === 'fireAndForget') {
-                stateEvent.callback(this.getContext(), { type: eventName, data: structuredClone(eventData)})
+                stateEvent.callback(this.getContext(), { type: eventName, data: eventData})
             }
         });
+        if (this.locked) {
+            this.allEventUnsubscribers.forEach(unsubscribe => unsubscribe())
+            return;
+        }
         if (isSetByDefault) {
             const newState = { ...currentState, context: { ...this.getContext() } }
             this.eventEmitter.emit('##updateContext##', newState)
         }
         else {
+            this.locked = true
             const newState = { ...currentState, value: target, context: { ...this.getContext() } }
-            this.eventEmitter.emit('##update##', newState)
+            this.eventEmitter.emit("##update##", newState)
         }
     }
 
@@ -151,7 +170,6 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.timerIds.forEach(timerId => {
             clearTimeout(timerId)
         })
-        this.eventEmitter
         this.allEventUnsubscribers = [];
         this.timerIds = [];
         this.eventEmitter = null;

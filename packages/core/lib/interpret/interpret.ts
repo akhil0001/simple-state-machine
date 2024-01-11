@@ -24,7 +24,6 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newReturnState) => {
             const clonedReturnState = { ...newReturnState };
-            stateHandler?.exit(clonedReturnState)
             const nextState = states[clonedReturnState.value]
             statePubSub.publish(clonedReturnState)
             stateHandler = new StateHandler(nextState, eventEmitter, clonedReturnState.context, clonedReturnState.value);
