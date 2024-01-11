@@ -130,4 +130,4 @@
     }
    
   ```
-- With this code in place, we have deflected one of the most dangerous hooks in react `useEffect` and yet achieved the timer app
+- Fin!
