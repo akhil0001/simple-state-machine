@@ -32,7 +32,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.allEventUnsubscribers = [];
         this.value = value;
         this.timerIds = [];
-        this.locked = false
+        this.locked = false;
         this.init();
     }
 
@@ -166,14 +166,15 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
 
     exit(newState: TReturnState<U, V>) {
         this.internalEventEmitter?.emit('##exit##', newState);
-        this.eventEmitter?.emit('##permitToEnterNewState##')
+        this.locked = true;
         this.allEventUnsubscribers.forEach(unsubscribe => unsubscribe())
         this.timerIds.forEach(timerId => {
             clearTimeout(timerId)
         })
         this.allEventUnsubscribers = [];
         this.timerIds = [];
-        this.eventEmitter = null;
         this.internalEventEmitter = null;
+        this.eventEmitter?.emit('##permitToEnterNewState##')
+        this.eventEmitter = null;
     }
 }
