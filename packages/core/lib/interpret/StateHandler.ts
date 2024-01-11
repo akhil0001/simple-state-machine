@@ -166,6 +166,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
 
     exit(newState: TReturnState<U, V>) {
         this.internalEventEmitter?.emit('##exit##', newState);
+        this.eventEmitter?.emit('##permitToEnterNewState##')
         this.allEventUnsubscribers.forEach(unsubscribe => unsubscribe())
         this.timerIds.forEach(timerId => {
             clearTimeout(timerId)

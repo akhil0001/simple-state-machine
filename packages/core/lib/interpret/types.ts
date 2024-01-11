@@ -18,4 +18,4 @@ export type TInterpretReturn<U extends TDefaultStates, V extends TDefaultContext
     start: () => void
 }
 
-export type ALL_EVENTS<W extends IDefaultEvent> = ['##update##' | "##updateContext##" | W[number]];
+export type ALL_EVENTS<W extends IDefaultEvent> = ['##update##' | "##updateContext##" | "##permitToEnterNewState##" | W[number]];

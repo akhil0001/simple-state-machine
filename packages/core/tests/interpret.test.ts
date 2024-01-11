@@ -4,6 +4,7 @@ import { TReturnState, interpret } from '../lib'
 import { MACHINE_SUPER_STATE } from '../lib/constants'
 import { makeThemeMachine } from './machines/themeMachine'
 import { makeDebounceMachine } from './machines/asyncMachine'
+import { lifeCycleMachine } from './machines/lifeCycleMachine'
 
 const context = createContext({
     count: 0,
@@ -39,7 +40,7 @@ statelessMachine.on('DOUBLE_INC').updateContext({
 statelessMachine.on('CUSTOM_DATA').updateContext({
     count: (_, event) => event.data.customData
 }).fireAndForget((_, event) => {
-    outerData.context = { count: event.data.customData }
+    outerData.context = { count: event.data.customData, dummyCount: 100 }
 })
 
 describe("interpret machine config", () => {
@@ -378,13 +379,13 @@ describe('life cycle methods of state', () => {
 })
 
 describe('interpet() returns updated state', () => {
-    const {state, start, send, subscribe} = interpret(makeThemeMachine(() => {}, () => {}, () => {}, () => {}))
+    const { state, start, send, subscribe } = interpret(makeThemeMachine(() => { }, () => { }, () => { }, () => { }))
     let outerState = {
         value: '',
         context: {}
     }
     subscribe(newState => outerState = newState);
-    test('state value should equal initial state',() => {
+    test('state value should equal initial state', () => {
         start()
         expect(state.value).toEqual(outerState.value)
     })
@@ -397,11 +398,11 @@ describe('interpet() returns updated state', () => {
     })
     test('state context should be updated', () => {
         expect(state.context).toEqual(outerState.context)
-    }) 
+    })
 })
 
 describe('interpret() should accept context', () => {
-    const {state, send, start} = interpret(statelessMachine, {count: 10});
+    const { state, send, start } = interpret(statelessMachine, { count: 10 });
     test('context should be shallow cloned with context declared during declaration of machine', () => {
         expect(state.context).toEqual({
             count: 10,
@@ -412,5 +413,58 @@ describe('interpret() should accept context', () => {
         start()
         send('INC')
         expect(state.context.count).toEqual(11)
+    })
+})
+
+describe("life cycle methods - complex interactions-level-one", () => {
+    const lifeCycleSpy = vi.fn((lifeCycleState) => lifeCycleState)
+    const { start, send, state, subscribe } = interpret(lifeCycleMachine, { lifeCycleSpy: lifeCycleSpy })
+    let outerState = state;
+    subscribe(newState => outerState = newState);
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    test('context should be initial value set', () => {
+        expect(state.context.lifeCycleState).toEqual('hibernating')
+        expect(outerState.context.lifeCycleState).toEqual('hibernating')
+    })
+
+    test('should call onEnter of idle state', () => {
+        start();
+        expect(state.context.lifeCycleState).toEqual('idle-entered')
+        expect(outerState.context.lifeCycleState).toEqual('idle-entered')
+    })
+
+    test('should update context on sending event', () => {
+        send('UPDATE_INPUT', { input: 'simple-state-machine' })
+        expect(state.context.input).toEqual('simple-state-machine')
+        expect(outerState.context.input).toEqual('simple-state-machine')
+    })
+
+    test('should call onExit before exiting the state', () => {
+        expect(lifeCycleSpy).toBeCalledWith('idle-exited')
+        expect(state.value).toEqual('debouncing')
+        expect(state.context.lifeCycleState).toEqual('debouncing-entered')
+    })
+
+    test('should call updateContext after 3000 seconds', () => {
+        vi.advanceTimersByTime(3000)
+        expect(lifeCycleSpy).toBeCalledWith('debouncing-after')
+        expect(state.context.lifeCycleState).toEqual('fetching-entered')
+    })
+
+    test('should move to deboucing state after seniding input and onExit should be called', () => {
+        expect(state.value).toEqual('idle')
+        send('UPDATE_INPUT',{input: 'universe'})
+        expect(lifeCycleSpy).toBeCalledWith('fetching-exited')
+    })
+
+    test('should call onEnter, always, onExit', () => {
+        vi.advanceTimersByTime(3000)
+        expect(state.context.lifeCycleSpy).toHaveBeenNthCalledWith(5, 'forward-entered')
+        expect(state.context.lifeCycleSpy).toHaveBeenNthCalledWith(6, 'forward-always-idle')
+        expect(state.context.lifeCycleSpy).toHaveBeenNthCalledWith(7, 'forward-exited')
     })
 })

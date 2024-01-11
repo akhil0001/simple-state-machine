@@ -14,7 +14,7 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
     let stateHandler: StateHandler<U, V, W> | null = null;
     let returnState: TReturnState<U, V> = {
         value: '',
-        context: {...declarationContext, ...context}
+        context: { ...declarationContext, ...context }
     }
     function _init() {
         statePubSub.subscribe((newReturnState) => {
@@ -24,12 +24,18 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         new MachineSuperState(masterStateJSON, eventEmitter)
         eventEmitter.on('##update##', (newReturnState) => {
             const clonedReturnState = { ...newReturnState };
-            const nextState = states[clonedReturnState.value]
             statePubSub.publish(clonedReturnState)
-            stateHandler = new StateHandler(nextState, eventEmitter, clonedReturnState.context, clonedReturnState.value);
+            if(!stateHandler){
+                eventEmitter.emit('##permitToEnterNewState##')
+            }
         })
         eventEmitter.on('##updateContext##', (newReturnState) => {
             statePubSub.publish(newReturnState)
+        })
+        eventEmitter.on('##permitToEnterNewState##', () => {
+            const newReturnState = statePubSub.getStore();
+            const nextState = states[newReturnState.value]
+            stateHandler = new StateHandler(nextState, eventEmitter, newReturnState.context, newReturnState.value);
         })
     }
 
@@ -44,7 +50,7 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
         if (internalStatePubSub.getStore().value === 'hibernating') {
             eventEmitter.emit('##update##', {
                 value: Object.keys(states)[0],
-                context: {...declarationContext, ...context}
+                context: { ...declarationContext, ...context }
             })
             internalStatePubSub.publish({ value: 'active' })
         }
