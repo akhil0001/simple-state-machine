@@ -16,7 +16,6 @@
       const context = createContext({});
 
       const ThemeMachine = new MachineConfig(states, context, events);
-      const {light, dark} = ThemeMachine.getStates();
 
       const {whenIn} = ThemeMachine;
       whenIn('light').on('TOGGLE').moveTo('dark');

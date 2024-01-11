@@ -32,21 +32,17 @@
 
 ### send()
 - `send` is a function that is used to send the `events` to state machine to perform actions or transitions
-- send function takes in either a string or an object of this format `{type: 'CLICK', data: {}}`
-- Usage:
+- send function takes in event's name as string and custom data as second parameter and is optional
+- Usage
   ```js
-    send('CLICK');
+    send('CLICK')
 
-    // if we want to send some data
-    send({
-        type: 'CLICK',
-        data: {
-            mouseX: 10,
-            mouseY: 100
-        }
+    // to send custom data
+    send('CLICK', {
+      mouseX: 10,
+      mouseY: 100
     })
   ```
-
 ### subscribe()
 - subscribe function takes a callback that notifies the developer about the subscribed changes
 - Usage:
