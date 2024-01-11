@@ -21,14 +21,19 @@ const updateInput = assign<typeof context, typeof events>({
 idle.on('updateInput').updateContext(updateInput)
 idle.on('updateInput').moveTo('debouncing')
 
-debouncing.after(500).moveTo('fetching')
+debouncing.after(5000).moveTo('fetching')
 debouncing.on('updateInput').updateContext(updateInput)
 debouncing.on('updateInput').moveTo('debouncing')
 
 fetching.on('updateInput').moveTo('debouncing').updateContext(updateInput)
 
-fetching.invokeAsyncCallback((context) => fetch('https://jsonplaceholder.typicode.com/todos/' + context.input)).onDone().moveTo('idle').fireAndForget((_, event) => console.log(event)).updateContext((context, event) => ({
+const asyncService = fetching.invokeAsyncCallback((context) => fetch('https://jsonplaceholder.typicode.com/todos/' + context.input))
+
+asyncService.onDone().moveTo('idle').updateContext((context, event) => ({
     ...context,
     response: event.data
 }))
 
+asyncService.onError().moveTo('error')
+
+fetching.onExit().fireAndForget(() => console.log('exited fire and forget'))
