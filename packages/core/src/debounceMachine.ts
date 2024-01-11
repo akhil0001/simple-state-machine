@@ -37,6 +37,7 @@ const updateTodoValue = assign<IContext, typeof events>({
 const { fetching, debouncing } = debounceMachine.getStates()
 
 debounceMachine.on('updateTodoValue').moveTo('debouncing').updateContext(updateTodoValue)
+debounceMachine.on('updateTodoValue').moveTo('debouncing').fireAndForget(console.log)
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
