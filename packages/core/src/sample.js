@@ -1,6 +1,6 @@
 import {
   MachineConfig,
-  createMachine,
+  interpret,
   createStates,
   createEvents,
   createContext,
@@ -24,6 +24,6 @@ idle.on("fetching")
 someMachine.on("fetching")
     .moveTo("fething");
 
-const machine = createMachine(someMachine);
+const machine = interpret(someMachine);
 
 machine.send({ type: "fetching", data: {} });

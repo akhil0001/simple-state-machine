@@ -5,13 +5,13 @@ import { TCond, TTargetState } from "./internalTypes";
 import { IDefaultEvent, TAfterCallback, TAssignPayload, TAsyncCallback, TCallback, TDefaultContext, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
 export type TStateJSON<IContext extends TDefaultContext, IStates extends readonly string[], IEvents extends IDefaultEvent> = {
-    [key: symbol]: Array<{
+    [key: symbol]: {
         target: TTargetState<IStates>,
         cond: TCond<IContext>,
         isSetByDefault: boolean
         event: StateEvent<IContext, IEvents>
         delay?: number | TAfterCallback<IContext>
-    }>
+    }
 }
 
 
@@ -31,8 +31,8 @@ export class State<IStates extends readonly string[], IContext extends TDefaultC
         isSetByDefault: boolean,
         event: StateEvent<IContext, IEvents>
     }) {
-        const prev = this.#stateJSON[actionType]?.[0] ?? {};
-        this.#stateJSON[actionType] = [{ ...prev, ...payload }]
+        const prev = this.#stateJSON[actionType] ?? {};
+        this.#stateJSON[actionType] = { ...prev, ...payload }
     }
 
     #commonLogic(actionType: IEvents[number], delay: number | TAfterCallback<IContext> = 0): {

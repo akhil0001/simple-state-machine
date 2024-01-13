@@ -2,8 +2,6 @@ import { StateEvent } from "./StateEvent";
 import { TCond, TTargetState } from "./internalTypes";
 import { IDefaultEvent, TAfterCallback, TAssignPayload, TDefaultContext, TDefaultStates, TStateEventCallback, TUpdateContextEventCallback } from "./types";
 
-
-
 export type TStateJSONPayload<IContext extends TDefaultContext, IStates extends TDefaultStates, IEvents extends IDefaultEvent> = {
     target: TTargetState<IStates>,
     cond: TCond<IContext>,

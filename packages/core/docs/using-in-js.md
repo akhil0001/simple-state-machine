@@ -1,10 +1,9 @@
 # Usage of State Machine in Javascript
 
-## createMachine()
-- `createMachine()` function takes 3 parameters
+## interpret()
+- `interpret()` function takes 3 parameters
   - 1. Machine Config object
   - 2. context (optional)
-  - 3. debug (optional)
 - And this function returns the following
   - [state](#state)
   - [send](#send)
@@ -12,9 +11,9 @@
   - [start]
 - Usage:
   ```js
-  const {state, start, send, subscribe} = createMachine(FetchingMachine);
+  const {state, start, send, subscribe} = interpret(FetchingMachine);
   ```
-- **Alert:** Every time `createMachine` is called, a new instance of Fetching Machine is called and it does not share the states of the other instances of the same machine
+- **Alert:** Every time `interpret` is called, a new instance of Fetching Machine is called and it does not share the states of the other instances of the same machine
 
 ## state
 - `state` is an object that has 3 values in it
@@ -33,36 +32,24 @@
 
 ### send()
 - `send` is a function that is used to send the `events` to state machine to perform actions or transitions
-- send function takes in either a string or an object of this format `{type: 'CLICK', data: {}}`
-- Usage:
+- send function takes in event's name as string and custom data as second parameter and is optional
+- Usage
   ```js
-    send('CLICK');
+    send('CLICK')
 
-    // if we want to send some data
-    send({
-        type: 'CLICK',
-        data: {
-            mouseX: 10,
-            mouseY: 100
-        }
+    // to send custom data
+    send('CLICK', {
+      mouseX: 10,
+      mouseY: 100
     })
   ```
-
 ### subscribe()
-- subscribe function takes in 2 parameters
-  - 1. either `allChanges` or `stateChange`
-  - 2. a callback that notifies the developer about the subscribed changes
-- `allChanges` is the default option which allows the user to subscribe to all the changes that occur. There are generally 2 changes here: State changes and context changes. Not all times, we would like to subscribe to all the changes. Whereas `stateChange` just subscribes to state value changes
+- subscribe function takes a callback that notifies the developer about the subscribed changes
 - Usage:
   ```js
-    subscribe('stateChange', (state) => {
-        // logs everytime there is a state value change
+    subscribe((state) => {
         console.log(state.value)
-    })
-
-    // all changes
-    subscribe('allChanges', (state) => {
-        document.querySelector('p').innerText = state.context.response
+        console.log(state.context)
     })
   ```
 

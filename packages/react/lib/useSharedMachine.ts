@@ -1,14 +1,14 @@
-import { IDefaultEvent, MachineConfig, TCurrentState, TDefaultContext, TDefaultStates, createMachine } from "@simple-state-machine/core";
+import { IDefaultEvent, MachineConfig, TReturnState, TDefaultContext, TDefaultStates, interpret } from "@simple-state-machine/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 function SharedMachineStore() {
     const store = new Map();
-    function getMachineInstance<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>): ReturnType<typeof createMachine<U, V, W>> {
+    function getMachineInstance<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>): ReturnType<typeof interpret<U, V, W>> {
         const { id } = machineConfig.getConfig();
         if (store.has(id)) {
             return store.get(id)
         }
-        const machineInstance = createMachine(machineConfig);
+        const machineInstance = interpret(machineConfig);
         machineInstance.start();
         store.set(id, machineInstance)
         return machineInstance
@@ -24,18 +24,17 @@ export function useSharedMachine<U extends TDefaultStates, V extends TDefaultCon
     }, [machineConfig]);
 
     const [state, setState] = useState(initialState);
-    const subscribeToAllChangesCb = useCallback((newState: TCurrentState<U, V>) => {
+    const subscribeCallback = useCallback((newState: TReturnState<U, V>) => {
         setState({
             value: newState.value,
             context: newState.context,
-            history: newState.history
         })
     }, []);
     useEffect(() => {
-        const unsubscribe = subscribe('allChanges', subscribeToAllChangesCb)
+        const unsubscribe = subscribe(subscribeCallback)
         return () => {
             unsubscribe()
         }
-    }, [subscribe, subscribeToAllChangesCb])
+    }, [subscribe, subscribeCallback])
     return { state, send }
 }

@@ -6,11 +6,7 @@ import React from "react";
 export const Debounce = () => {
     const { state, send } = useMachine(debounceMachine);
     const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        send({
-            type: 'updateInput', data: {
-                input: e.currentTarget.value
-            }
-        })
+        send('updateInput', {input: e.currentTarget.value})
     }, [send])
 
     return (

@@ -47,8 +47,8 @@ export class MachineConfig<IStates extends TDefaultStates, IContext extends TDef
         isSetByDefault: boolean,
         event: StateEvent<IContext, IEvents>
     }) {
-        const prev = this.#stateJSON[actionType]?.[0] ?? {};
-        this.#stateJSON[actionType] = [{ ...prev, ...payload }]
+        const prev = this.#stateJSON[actionType] ?? {};
+        this.#stateJSON[actionType] = { ...prev, ...payload }
     }
 
     on(actionType: IEvents[number]): {

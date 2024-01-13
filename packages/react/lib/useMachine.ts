@@ -1,31 +1,30 @@
-import { IDefaultEvent, MachineConfig, TCurrentState, TDefaultContext, TDefaultStates, createMachine } from "@simple-state-machine/core";
+import { IDefaultEvent, MachineConfig, TReturnState, TDefaultContext, TDefaultStates, interpret } from "@simple-state-machine/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export function useMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V, debug: boolean = false) {
-    const { state: initialState, send, subscribe, start, mermaidInspect } = useMemo(() => {
-        return createMachine(machineConfig, context, debug);
+export function useMachine<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V) {
+    const { state: initialState, send, subscribe, start } = useMemo(() => {
+        return interpret(machineConfig, context);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [machineConfig])
     const [state, setState] = useState(initialState);
-    const subscribeToAllChangesCb = useCallback((newState: TCurrentState<U, V>) => {
+    const subscribeCallback = useCallback((newState: TReturnState<U, V>) => {
         setState({
             value: newState.value,
             context: newState.context,
-            history: newState.history
         });
     }, []);
 
 
     useEffect(() => {
-        start()
-    }, [start])
-
-    useEffect(() => {
-        const unsubscribe = subscribe('allChanges', subscribeToAllChangesCb);
+        const unsubscribe = subscribe(subscribeCallback);
         return () => {
             unsubscribe()
         }
-    }, [subscribe, subscribeToAllChangesCb])
+    }, [subscribe, subscribeCallback])
 
-    return { state, send, mermaidInspect };
+    useEffect(() => {
+        start()
+    }, [start])
+
+    return { state, send };
 }

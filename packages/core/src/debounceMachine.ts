@@ -18,17 +18,16 @@ interface IContext {
 }
 
 export const debounceMachine = new MachineConfig<typeof states, IContext, typeof events>(states, {
-    url: '',
+    url: 'https://jsonplaceholder.typicode.com/todos/',
     data: null,
     todoValue: "1",
-    delay: 500
+    delay: 5000
 }, events)
 
 const fetchingUrl: TAsyncCallback<IContext> = (context) => {
     const { url } = context
     return fetch(url + context.todoValue)
         .then(res => res.json())
-        .then(data => ({ response: data }))
 }
 
 const updateTodoValue = assign<IContext, typeof events>({
@@ -38,6 +37,7 @@ const updateTodoValue = assign<IContext, typeof events>({
 const { fetching, debouncing } = debounceMachine.getStates()
 
 debounceMachine.on('updateTodoValue').moveTo('debouncing').updateContext(updateTodoValue)
+debounceMachine.on('updateTodoValue').moveTo('debouncing').fireAndForget(console.log)
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
@@ -45,9 +45,6 @@ debouncing.after(context => context.delay)
 fetching.invokeAsyncCallback(fetchingUrl)
     .onDone()
     .moveTo('idle')
-    .updateContext({ data: (_, event) => event.data.response })
+    .updateContext({ data: (_, event) => event.data as IAPIResponse })
     .fireAndForget(console.log)
 
-fetching.invokeAsyncCallback(fetchingUrl)
-    .onError()
-    .moveTo('error')

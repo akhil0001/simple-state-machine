@@ -3,7 +3,7 @@
   "author": {
     "name": "Akhil Sai Ram Chennareddy"
   },
-  "version": "0.0.23",
+  "version": "0.1.0-alpha.2",
   "type": "module",
   "files": [
     "dist"
@@ -22,7 +22,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "build:watch": "vite build --watch"
+    "build:watch": "vite build --watch",
+    "test": "vitest"
   },
   "devDependencies": {
     "@types/node": "^20.9.0"

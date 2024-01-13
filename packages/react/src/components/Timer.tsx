@@ -9,13 +9,7 @@ export const Timer = () => {
   const isRunning = state.value === "running";
 
 
-  const updateTime = (e) =>
-    send({
-      type: "UPDATE_TIME",
-      data: {
-        time: e.currentTarget.value,
-      },
-    });
+  const updateTime = (e) => send('UPDATE_TIME', {time: e.currentTarget.value})
   const stop = () => send("STOP");
   const start = () => send("START");
   const pause = () => send("PAUSE");
