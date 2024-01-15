@@ -24,11 +24,13 @@ function init() {
     const inputEl = document.getElementById('todoNumber')
     const responseEl = document.getElementById('response')
     const statusEl = document.getElementById('status')
+    const stopBtn = document.getElementById('stop-btn');
     const { start, send, subscribe } = interpret(debounceMachine)
     inputEl?.addEventListener('input', (e) => {
         const target = e.currentTarget as HTMLInputElement;
         send('updateTodoValue', { todoValue: target.value })
     });
+    stopBtn?.addEventListener('click', () => send('stop'));
     subscribe(state => {
         console.log('------ I am now in ', state.value, ' ------')
         if (statusEl) {
@@ -38,6 +40,13 @@ function init() {
     subscribe((state) => {
         if (responseEl && state.context.data) {
             responseEl.innerText = 'Response::' + state.context.data.title
+        }
+        const isIdle = state.matchesAny('idle');
+        if(isIdle) {
+            stopBtn?.setAttribute('disabled', "true")
+        }
+        else {
+            stopBtn?.removeAttribute('disabled')
         }
     })
     start()
