@@ -1,7 +1,6 @@
 import { TDefaultStates, TDefaultContext, IDefaultEvent } from "../types"
-import { MACHINE_SUPER_STATE } from "../constants";
 
-export type TMatchesAnyParams<U extends TDefaultStates> = Array<U[number] | typeof MACHINE_SUPER_STATE | "">
+export type TMatchesAnyParams<U extends TDefaultStates> = Array<U[number] | "">
 export type TMatchesAny<U extends TDefaultStates> = (...args: TMatchesAnyParams<U>) => boolean
 
 export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
