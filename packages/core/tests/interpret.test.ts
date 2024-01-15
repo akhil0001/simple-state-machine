@@ -5,6 +5,7 @@ import { MACHINE_SUPER_STATE } from '../lib/constants'
 import { makeThemeMachine } from './machines/themeMachine'
 import { makeDebounceMachine } from './machines/asyncMachine'
 import { lifeCycleMachine } from './machines/lifeCycleMachine'
+import { ManyStatesMachine } from './machines/manyStatesMachine'
 
 const context = createContext({
     count: 0,
@@ -457,7 +458,7 @@ describe("life cycle methods - complex interactions-level-one", () => {
 
     test('should move to deboucing state after seniding input and onExit should be called', () => {
         expect(state.value).toEqual('idle')
-        send('UPDATE_INPUT',{input: 'universe'})
+        send('UPDATE_INPUT', { input: 'universe' })
         expect(lifeCycleSpy).toBeCalledWith('fetching-exited')
     })
 
@@ -467,4 +468,31 @@ describe("life cycle methods - complex interactions-level-one", () => {
         expect(state.context.lifeCycleSpy).toHaveBeenNthCalledWith(6, 'forward-always-idle')
         expect(state.context.lifeCycleSpy).toHaveBeenNthCalledWith(7, 'forward-exited')
     })
+})
+
+describe("state should have .matches function", () => {
+    const { state, send, start, subscribe } = interpret(ManyStatesMachine)
+    test('.matches is a function', () => {
+        const { matchesAny } = state;
+        expect(typeof matchesAny).toBe('function')
+    })
+
+    test('state should match empty string before starting', () => {
+        expect(state.matchesAny('')).toBeTruthy()
+    })
+
+    test('state should match initial state after starting', () => {
+        start();
+        expect(state.matchesAny('idle')).toBeTruthy()
+    })
+
+    test('state should match with the chaging the state as per transitions', () => {
+        send('NEXT');
+        expect(state.matchesAny('running')).toBeTruthy()
+    });
+
+    test('state.matches should be able to take more than one state', () => {
+        expect(state.matchesAny('running', 'asyncCallback')).toBeTruthy()
+    })
+
 })
