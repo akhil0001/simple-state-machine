@@ -18,7 +18,7 @@
 ## state
 - `state` is an object that has 3 values in it
   - `value`: which represents the current state value and is in string format
-  - `history`: this is the previous state value from which it transitioned to current state.
+  - `matchesAny`: a util function that can be used to test the state value across different values. Returns true or false based on the matching
   - `context`: this is the context of the state machine in the current state
 - Usage:
   ```js
@@ -26,8 +26,8 @@
     console.log(state.value === 'idle')
     // prints the url stored inside the context
     console.log(state.context.url)
-    // prints the previous state value
-    console.log(state.history)
+    // returns true if the state matches matches any one of them, else returns false
+    console.log(state.matchesAny('idle', 'loading'))
   ```
 
 ### send()
