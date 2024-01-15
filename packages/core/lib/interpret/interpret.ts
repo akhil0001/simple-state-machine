@@ -4,19 +4,21 @@ import { PubSub } from "./pubSub";
 import { MachineConfig } from "../MachineConfig";
 import { MachineSuperState } from "./MachineSuperState";
 import { StateHandler } from "./StateHandler";
-import { TInterpretReturn, TReturnState, ALL_EVENTS, TSubscribeCallback, TInterpretInternalState, TMatchesAnyParams } from "./types";
+import { TInterpretReturn, TReturnState, ALL_EVENTS, TSubscribeCallback, TInterpretInternalState, TMatchesAnyParams, TEventEmitterState } from "./types";
 
 export function interpret<U extends TDefaultStates, V extends TDefaultContext, W extends IDefaultEvent>(machineConfig: MachineConfig<U, V, W>, context: Partial<V> = {} as V): TInterpretReturn<U, V, W> {
     const { states, context: declarationContext, stateJSON: masterStateJSON } = machineConfig.getConfig();
-    const statePubSub = new PubSub<TReturnState<U, V>>();
-    const internalStatePubSub = new PubSub<TInterpretInternalState>({ value: 'hibernating' })
-    const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>();
     let stateHandler: StateHandler<U, V, W> | null = null;
     let returnState: TReturnState<U, V> = {
         value: '',
         context: { ...declarationContext, ...context },
         matchesAny: _matchesAny
     }
+
+    const statePubSub = new PubSub<TReturnState<U, V>>(returnState);
+    const internalStatePubSub = new PubSub<TInterpretInternalState>({ value: 'hibernating' })
+    const eventEmitter = new EventEmitter<ALL_EVENTS<W>, [TEventEmitterState<U,V>, object]>();
+   
     function _init() {
         statePubSub.subscribe((newReturnState) => {
             returnState.value = newReturnState.value;
@@ -56,7 +58,6 @@ export function interpret<U extends TDefaultStates, V extends TDefaultContext, W
             eventEmitter.emit('##update##', {
                 value: Object.keys(states)[0],
                 context: { ...declarationContext, ...context },
-                matchesAny: _matchesAny
             })
             internalStatePubSub.publish({ value: 'active' })
         }

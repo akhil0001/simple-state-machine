@@ -9,6 +9,8 @@ export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = 
     matchesAny: TMatchesAny<U>;
 }
 
+export type TEventEmitterState<U extends TDefaultStates, V extends TDefaultContext> = Pick<TReturnState<U,V>, 'context' | 'value'>
+
 export type TSubscribeCallback<U extends TDefaultStates, V extends TDefaultContext> = (state: TReturnState<U, V>) => unknown
 
 export type TInterpretInternalState = {
