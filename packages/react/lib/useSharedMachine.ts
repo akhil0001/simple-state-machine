@@ -28,6 +28,7 @@ export function useSharedMachine<U extends TDefaultStates, V extends TDefaultCon
         setState({
             value: newState.value,
             context: newState.context,
+            matchesAny: newState.matchesAny
         })
     }, []);
     useEffect(() => {
