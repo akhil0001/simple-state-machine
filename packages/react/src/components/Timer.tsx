@@ -6,7 +6,7 @@ export const Timer = () => {
   const { state, send } = useMachine(TimerMachine);
   const { time, timeInput } = state.context;
 
-  const isRunning = state.value === "running";
+  const isRunning = state.matchesAny('running')
 
 
   const updateTime = (e) => send('UPDATE_TIME', {time: e.currentTarget.value})

@@ -1,9 +1,15 @@
 import { TDefaultStates, TDefaultContext, IDefaultEvent } from "../types"
 
+export type TMatchesAnyParams<U extends TDefaultStates> = Array<U[number] | "">
+export type TMatchesAny<U extends TDefaultStates> = (...args: TMatchesAnyParams<U>) => boolean
+
 export type TReturnState<U extends TDefaultStates, V extends TDefaultContext> = {
     value: U[number],
-    context: V
+    context: V,
+    matchesAny: TMatchesAny<U>;
 }
+
+export type TEventEmitterState<U extends TDefaultStates, V extends TDefaultContext> = Pick<TReturnState<U,V>, 'context' | 'value'>
 
 export type TSubscribeCallback<U extends TDefaultStates, V extends TDefaultContext> = (state: TReturnState<U, V>) => unknown
 

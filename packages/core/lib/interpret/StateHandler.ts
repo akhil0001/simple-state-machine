@@ -3,7 +3,7 @@ import { TStateJSONPayload } from "../Action";
 import { TStateJSON } from "../State";
 import { TStates } from "../internalTypes";
 import { EventEmitter } from "./EventEmitter";
-import { ALL_EVENTS, TReturnState } from "./types";
+import { ALL_EVENTS, TEventEmitterState } from "./types";
 
 const INTERNAL_EVENTS = ['##exit##', '##enter##', '##after##', '##always##', '##onDone##', "##onError##"] as const;
 
@@ -13,15 +13,15 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
     stateJSON: TStateJSON<V, U, W>;
     service: TCallback<V, W>;
     asyncService: TAsyncCallback<V>
-    eventEmitter: null | EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>;
+    eventEmitter: null | EventEmitter<ALL_EVENTS<W>, [TEventEmitterState<U,V>, object]>;
     context: V;
     value: U[number];
     allEventUnsubscribers: Array<(...args: unknown[]) => unknown>
     timerIds: NodeJS.Timeout[];
-    internalEventEmitter: null | EventEmitter<TInternalEvents, [TReturnState<U, V>, object]>;
+    internalEventEmitter: null | EventEmitter<TInternalEvents, [TEventEmitterState<U,V>, object]>;
     locked: boolean;
 
-    constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TReturnState<U, V>, object]>, context: V, value: U[number]) {
+    constructor(state: TStates<U, V, W>[U[number]], eventEmitter: EventEmitter<ALL_EVENTS<W>, [TEventEmitterState<U,V>, object]>, context: V, value: U[number]) {
         const { stateJSON, callback, asyncCallback } = state.getConfig();
         this.stateJSON = stateJSON;
         this.service = callback;
@@ -84,7 +84,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.runAsyncService()
     }
 
-    eventHandler(event: symbol, eventName: string, currentState: TReturnState<U, V>, eventData: object) {
+    eventHandler(event: symbol, eventName: string, currentState: TEventEmitterState<U,V>, eventData: object) {
         const action = this.stateJSON[event] as unknown as TStateJSONPayload<V, U, W>
         const boundRunTimer = this.runTimer.bind(this)
         const boundRunActions = this.runActions.bind(this)
@@ -96,7 +96,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
     }
 
-    runTimer(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
+    runTimer(action: TStateJSONPayload<V, U, W>, currentState: TEventEmitterState<U,V>, eventName: W[number], eventData: object) {
         const { delay } = action;
         const delayInNumber = typeof delay === 'number' ? delay : delay(this.getContext())
         const boundRunActions = this.runActions.bind(this)
@@ -104,7 +104,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         this.timerIds.push(timerId)
     }
 
-    runActions(action: TStateJSONPayload<V, U, W>, currentState: TReturnState<U, V>, eventName: W[number], eventData: object) {
+    runActions(action: TStateJSONPayload<V, U, W>, currentState: TEventEmitterState<U,V>, eventName: W[number], eventData: object) {
         const { event, target, isSetByDefault, cond } = action;
         let resultContext = { ...this.getContext() };
         if (!cond(resultContext) || !this.eventEmitter || !this.internalEventEmitter) {
@@ -164,7 +164,7 @@ export class StateHandler<U extends TDefaultStates, V extends TDefaultContext, W
         }
     }
 
-    exit(newState: TReturnState<U, V>) {
+    exit(newState: TEventEmitterState<U,V>) {
         this.internalEventEmitter?.emit('##exit##', newState);
         this.locked = true;
         this.allEventUnsubscribers.forEach(unsubscribe => unsubscribe())

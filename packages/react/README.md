@@ -35,6 +35,7 @@
 
 ## Examples
 - [Debounced Input](https://codesandbox.io/p/sandbox/debounce-stg462)
+- [Polling API](https://codesandbox.io/p/sandbox/polling-463vsz)
 
 ## Tutorial
 - [Timer App](./docs/tutorial.md)

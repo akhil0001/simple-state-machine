@@ -11,6 +11,7 @@ export function useMachine<U extends TDefaultStates, V extends TDefaultContext, 
         setState({
             value: newState.value,
             context: newState.context,
+            matchesAny: newState.matchesAny
         });
     }, []);
 

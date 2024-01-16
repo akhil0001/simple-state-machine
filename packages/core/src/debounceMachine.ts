@@ -3,7 +3,7 @@ import { createEvents } from "../lib/MachineConfig";
 import './timerMachine'
 
 const states = createStates('idle', 'fetching', 'debouncing', 'error')
-const events = createEvents('updateTodoValue')
+const events = createEvents('updateTodoValue', 'stop')
 
 interface IAPIResponse {
     userId: string;
@@ -38,6 +38,7 @@ const { fetching, debouncing } = debounceMachine.getStates()
 
 debounceMachine.on('updateTodoValue').moveTo('debouncing').updateContext(updateTodoValue)
 debounceMachine.on('updateTodoValue').moveTo('debouncing').fireAndForget(console.log)
+debounceMachine.on('stop').moveTo('idle')
 
 debouncing.after(context => context.delay)
     .moveTo('fetching')
